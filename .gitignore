@@ -21,3 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# keys, etc
+/src/Auth/FirebaseConfig.ts
+/src/Auth/credentials.json
