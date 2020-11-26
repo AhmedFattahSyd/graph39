@@ -17,4 +17,13 @@ export default class User {
   signOff = async () => {};
 
   init = async () => {};
+
+  getUserData = (): UserData =>{
+    const userData: UserData = {name: this._name}
+    return userData
+  }
+}
+
+export interface UserData {
+  name: string | null,
 }

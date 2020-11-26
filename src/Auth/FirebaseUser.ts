@@ -7,9 +7,11 @@ import { FirebaseConfig } from "./FirebaseConfig";
 export default class FirebaseUser extends User {
   private _auth: firebase.auth.Auth | null = null;
   private _authUser: firebase.User | null = null;
+
   public get auth(): firebase.auth.Auth | null {
     return this._auth;
   }
+
   public get authUser(): firebase.User | null {
     return this._authUser;
   }
@@ -18,8 +20,15 @@ export default class FirebaseUser extends User {
     try {
       firebase.initializeApp(FirebaseConfig);
       this._auth = firebase.auth();
-      console.log("FirebaseUser: auth:",this._auth)
+      await firebase.firestore().enablePersistence();
+      await this._auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      // console.log("FirebaseUser: init(): auth:", this._auth);
       if (this.auth !== null) {
+        if (this._auth.currentUser !== null) {
+          this.setUserSignedOn(this._auth.currentUser);
+        }else{
+          console.log("FirebaseUser: init(): currentUser is null")
+        }
         this.auth.onAuthStateChanged((authUser) => {
           authUser ? this.setUserSignedOn(authUser) : this.setUserSignedOff();
         });
@@ -36,7 +45,8 @@ export default class FirebaseUser extends User {
   signOn = async () => {
     if (this.auth !== null) {
       const provider = new firebase.auth.GoogleAuthProvider();
-      provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
+      // we need to add this when we start using GDrive
+      // provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
       await this.auth.signInWithPopup(provider);
     } else {
       throw new Error(
@@ -47,17 +57,22 @@ export default class FirebaseUser extends User {
 
   setUserSignedOn = (firebaseUser: firebase.User) => {
     this._authUser = firebaseUser;
-    this._signedOn = true;
-    this._name = firebaseUser.displayName;
+    if (this._authUser !== null) {
+      this._signedOn = true;
+      this._name = firebaseUser.displayName;
+    } else {
+      throw new Error("FirebaseUser: setUserSignedOn: authUser is null");
+    }
   };
 
   setUserSignedOff = () => {
+    console.log("setUserSignedOff");
     this._authUser = null;
     this._signedOn = false;
     this._name = null;
   };
 
   signOff = async () => {
-      this.setUserSignedOff()
+    this.setUserSignedOff();
   };
 }
