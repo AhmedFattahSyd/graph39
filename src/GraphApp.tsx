@@ -24,6 +24,7 @@ import NodeView from "./View/NodeView";
 import ViewableItem from "./View/ViewableItem";
 import { ViewableItemClass } from "./View/ViewableItemClass";
 import SearchView from "./View/SearchView";
+import { GraphNodeType } from "./Core/NodeTypes";
 
 interface AppProps {}
 
@@ -85,8 +86,32 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     };
   }
 
-  createNewNode = async () => {
-    const newNode = await this.graphExplorer.createNewNode();
+  createNewEntry = async () => {
+    const newNode = await this.graphExplorer.createNewNode([GraphNodeType.Entry]);
+    if (newNode !== null) {
+      const viewableItem = new ViewableItem(ViewableItemClass.Node, newNode);
+      const openViewableItems = this.state.openViewableItems;
+      openViewableItems.set(viewableItem.id, viewableItem);
+      this.setState({ openViewableItems: openViewableItems });
+    } else {
+      this.showMessage("New node could not be created", MessageType.Error);
+    }
+  };
+
+  createNewList = async () => {
+    const newNode = await this.graphExplorer.createNewNode([GraphNodeType.List]);
+    if (newNode !== null) {
+      const viewableItem = new ViewableItem(ViewableItemClass.Node, newNode);
+      const openViewableItems = this.state.openViewableItems;
+      openViewableItems.set(viewableItem.id, viewableItem);
+      this.setState({ openViewableItems: openViewableItems });
+    } else {
+      this.showMessage("New node could not be created", MessageType.Error);
+    }
+  };
+
+  createNewTag = async () => {
+    const newNode = await this.graphExplorer.createNewNode([GraphNodeType.Tag]);
     if (newNode !== null) {
       const viewableItem = new ViewableItem(ViewableItemClass.Node, newNode);
       const openViewableItems = this.state.openViewableItems;
@@ -266,7 +291,13 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
         <Divider />
         <List style={{ width: "300px" }}>
           <Divider />
-          <ListItem button onClick={this.createNewNode}>
+          <ListItem button onClick={this.createNewList}>
+            <ListItemText primary="New list" />
+          </ListItem>
+          <ListItem button onClick={this.createNewTag}>
+            <ListItemText primary="New tag" />
+          </ListItem>
+          <ListItem button onClick={this.createNewEntry}>
             <ListItemText primary="New entry" />
           </ListItem>
           <Divider />
@@ -432,7 +463,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
               <CircularProgress color="secondary" size={25} value={50} />
             ) : (
               <Tooltip title="New entry">
-                <Icon style={{ margin: "5px" }} onClick={this.createNewNode}>
+                <Icon style={{ margin: "5px" }} onClick={this.createNewEntry}>
                   add
                 </Icon>
               </Tooltip>

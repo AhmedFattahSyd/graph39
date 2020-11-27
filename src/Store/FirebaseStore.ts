@@ -9,19 +9,21 @@ import GraphNode from "../Core/GraphNode";
 import FirebaseNode, { FirebaseNodeData } from "./FirebaseNode";
 import GraphExplorer from "../GraphExplorer/GraphExplorer";
 import Graph from "../Core/Graph";
+import FirebaseGraph, { FirebaseGraphData } from "./FirebaseGraph";
 
 export default class FirebaseStore extends GraphStore {
   private _db: firebase.firestore.Firestore | null = null;
   private _authUser: firebase.User | null = null;
   readonly UserCollectionName = "users";
   readonly NodeCollectionName = "nodes";
+  readonly GraphCollectionName = "graphs";
   private graphExporer: GraphExplorer;
-  private graph: Graph;
+  private currentGraph: Graph;
 
   constructor(user: User, graphExplorer: GraphExplorer, graph: Graph) {
     super(user);
     this.graphExporer = graphExplorer;
-    this.graph = graph;
+    this.currentGraph = graph;
   }
 
   init = async () => {
@@ -39,16 +41,18 @@ export default class FirebaseStore extends GraphStore {
 
   checkUserAndLoadData = async () => {
     if (await this.doesUserExist()) {
-      console.log("FirebaseStore: checkUser..: User exists");
-      await this.loadNodes();
+      // console.log("FirebaseStore: checkUser..: User exists");
+      await this.loadData();
     } else {
-      console.log("FirebaseStore: checkUser..: User does not exists");
-      this.createUser();
+      // console.log("FirebaseStore: checkUser..: User does not exists");
+      await this.createUser();
+      await this.createCurrentGraph();
     }
   };
 
   loadData = async () => {
     try {
+      await this.loadCurrentGraph();
       await this.loadNodes();
       await this.graphExporer.storeUpdated();
     } catch (error) {
@@ -61,6 +65,8 @@ export default class FirebaseStore extends GraphStore {
       const docRef = await this._db
         ?.collection(this.UserCollectionName)
         .doc(this._authUser?.uid)
+        .collection(this.GraphCollectionName)
+        .doc(this.currentGraph.id)
         .collection(this.NodeCollectionName)
         .get();
       if (docRef !== undefined) {
@@ -76,17 +82,48 @@ export default class FirebaseStore extends GraphStore {
     }
   };
 
-  addToNodes = async (id: string, data: FirebaseNodeData) => {
-    const newNode = FirebaseNode.fromData(id, data);
-    this.graph.nodes.set(id, newNode);
+  loadCurrentGraph = async () => {
+    try {
+      const docRef = await this._db
+        ?.collection(this.UserCollectionName)
+        .doc(this._authUser?.uid)
+        .collection(this.GraphCollectionName)
+        .get();
+      if (docRef !== undefined) {
+        docRef.forEach(async (doc) => {
+          // console.log("FirebaseStore: loadNodes: doc:", doc);
+          const docData = doc.data();
+          await this.setCurrentGraph(doc.id, docData as FirebaseGraphData);
+        });
+        // console.log("FirebaseStore: loadNodes: nodes:", this.graph.nodes);
+      }
+    } catch (error) {
+      throw error;
+    }
   };
 
-  createNewEntry = async (node: GraphNode) => {
+  setCurrentGraph = (id: string, data: FirebaseGraphData) => {
+    console.log("setCurrentGraph: loaded graph:", data.name);
+    // load the graph that matched the current graph
+    if (data.name === this.currentGraph.name) {
+      console.log("setCurrentGraph: graph has been set");
+      this.currentGraph.id = id;
+    }
+  };
+
+  addToNodes = async (id: string, data: FirebaseNodeData) => {
+    const newNode = FirebaseNode.fromData(id, data);
+    this.currentGraph.nodes.set(id, newNode);
+  };
+
+  createNewNode = async (node: GraphNode) => {
     const nodeData = node.getNodeData();
     if (this._db !== null) {
       await this._db
         .collection(this.UserCollectionName)
         .doc(this._authUser?.uid)
+        .collection(this.GraphCollectionName)
+        .doc(this.currentGraph.id)
         .collection(this.NodeCollectionName)
         .doc(node.id)
         .set(nodeData);
@@ -108,6 +145,20 @@ export default class FirebaseStore extends GraphStore {
     }
   };
 
+  createCurrentGraph = async () => {
+    if (this._db !== null) {
+      const storedGraph = new FirebaseGraph(this.currentGraph);
+      await this._db
+        .collection(this.UserCollectionName)
+        .doc(this._authUser?.uid)
+        .collection(this.GraphCollectionName)
+        .doc(this.currentGraph.id)
+        .set(storedGraph.getData());
+    } else {
+      throw new Error("FirebaseStore: db is null");
+    }
+  };
+
   updateNode = async (node: GraphNode) => {
     try {
       const nodeData = node.getNodeData();
@@ -115,6 +166,8 @@ export default class FirebaseStore extends GraphStore {
         await this._db
           .collection(this.UserCollectionName)
           .doc(this._authUser?.uid)
+          .collection(this.GraphCollectionName)
+          .doc(this.currentGraph.id)
           .collection(this.NodeCollectionName)
           .doc(node.id)
           .set(nodeData);

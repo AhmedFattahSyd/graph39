@@ -6,10 +6,11 @@ import FirebaseUser from "../Auth/FirebaseUser";
 import FirebaseStore from "../Store/FirebaseStore";
 import GraphNode from "../Core/GraphNode";
 import Graph from "../Core/Graph";
+import { GraphNodeType } from "../Core/NodeTypes";
 
 export default class GraphExplorer {
   private user = new FirebaseUser();
-  private _mainGraph = new Graph("Main Graph");
+  private _mainGraph = new Graph("MainGraph");
   public get mainGraph(): Graph {
     return this._mainGraph;
   }
@@ -49,10 +50,10 @@ export default class GraphExplorer {
     await this.invokeRefreshData();
   };
 
-  createNewNode = async (): Promise<GraphNode> => {
+  createNewNode = async (types: GraphNodeType[]): Promise<GraphNode> => {
     try {
-      const newNode = new GraphNode("New entry");
-      this.store.createNewEntry(newNode);
+      const newNode = new GraphNode("New entry", "",types);
+      this.store.createNewNode(newNode);
       this._mainGraph.nodes.set(newNode.id, newNode);
       this.invokeRefreshData();
       return newNode;

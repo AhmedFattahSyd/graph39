@@ -69,11 +69,11 @@ export default class NodeView extends React.Component<
             variant="button"
             style={{
               color: GraphTheme.palette.primary.contrastText,
-              fontSize: "11px",
+              fontSize: "9px",
               fontWeight: "bold",
             }}
           >
-            {this.state.currentNode.class}
+            {this.state.currentNode.nodeTypes}
           </Typography>
           <div style={{ width: "5px" }} />
           <Typography

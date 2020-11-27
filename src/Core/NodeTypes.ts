@@ -1,6 +1,5 @@
-export enum BuiltInNodeType {
+export enum GraphNodeType {
     Tag = "Tag",
-    Topic = "Topic",
     Entry = "Entry",
     List = "List",
 }

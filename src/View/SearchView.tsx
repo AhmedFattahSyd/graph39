@@ -10,6 +10,7 @@ import {
 import React from "react";
 import Graph from "../Core/Graph";
 import GraphNode from "../Core/GraphNode";
+import { GraphNodeType } from "../Core/NodeTypes";
 import GraphApp from "../GraphApp";
 import GraphExplorer from "../GraphExplorer/GraphExplorer";
 import GraphTheme from "../GraphTheme";
@@ -31,7 +32,9 @@ interface SearchViewState {
   itemDataChanged: boolean;
   dataSavingInProgress: boolean;
   searchText: string;
-  filteredNodes: Map<string, GraphNode>;
+  // filteredNodes: Map<string, GraphNode>;
+  graphSize: number;
+  currentNodes: Map<string, GraphNode>;
 }
 
 export default class SearchView extends React.Component<
@@ -45,7 +48,9 @@ export default class SearchView extends React.Component<
       itemDataChanged: false,
       dataSavingInProgress: false,
       searchText: "",
-      filteredNodes: props.currentGraph.getFilteredNodes(""),
+      // filteredNodes: props.currentGraph.getFilteredNodes(""),
+      graphSize: props.currentGraph.nodes.size,
+      currentNodes: props.currentGraph.nodes,
     };
   }
 
@@ -123,11 +128,11 @@ export default class SearchView extends React.Component<
   };
 
   setFilteredNodes = () => {
-    this.setState({
-      filteredNodes: this.state.currentGraph.getFilteredNodes(
-        this.state.searchText
-      ),
-    });
+    // this.setState({
+    //   filteredNodes: this.state.currentGraph.getFilteredNodes(
+    //     this.state.searchText
+    //   ),
+    // });
   };
 
   renderPanels = () => {
@@ -142,8 +147,20 @@ export default class SearchView extends React.Component<
         >
           <Panel
             index={1}
-            renderLabelFun={this.renderNodesPanelLabel}
-            renderDetailsFun={this.renderFilteredNodes}
+            renderLabelFun={this.renderListPanelLabel}
+            renderDetailsFun={this.renderFilteredLists}
+            initialStateOpen={false}
+          />
+           <Panel
+            index={2}
+            renderLabelFun={this.renderTagPanelLabel}
+            renderDetailsFun={this.renderFilteredTags}
+            initialStateOpen={false}
+          />
+           <Panel
+            index={3}
+            renderLabelFun={this.renderEntryPanelLabel}
+            renderDetailsFun={this.renderFilteredEntries}
             initialStateOpen={false}
           />
           {/* <MpgPanel
@@ -176,14 +193,18 @@ export default class SearchView extends React.Component<
     state = {
       ...state,
       currentGraph: props.currentGraph,
+      graphSize: props.currentGraph.nodes.size,
     };
     return state;
   };
 
-  private renderFilteredNodes = () => {
+  private renderFilteredLists = () => {
+    const filteredNodes = this.state.currentGraph.getFilteredNodes(
+      this.state.searchText,GraphNodeType.List
+    );
     return (
       <div>
-        {this.state.filteredNodes.size > 0 ? (
+        {filteredNodes.size > 0 ? (
           <div>
             <Card
               style={{
@@ -192,7 +213,7 @@ export default class SearchView extends React.Component<
               }}
             >
               <NodeListComponent
-                nodes={this.state.filteredNodes}
+                nodes={filteredNodes}
                 graphApp={this.props.graphApp}
                 graphExplorer={this.props.graphExplorer}
               />
@@ -205,7 +226,66 @@ export default class SearchView extends React.Component<
     );
   };
 
-  renderNodesPanelLabel = () => {
+  private renderFilteredTags = () => {
+    const filteredNodes = this.state.currentGraph.getFilteredNodes(
+      this.state.searchText,GraphNodeType.Tag
+    );
+    return (
+      <div>
+        {filteredNodes.size > 0 ? (
+          <div>
+            <Card
+              style={{
+                backgroundColor: GraphTheme.palette.primary.light,
+                margin: 5,
+              }}
+            >
+              <NodeListComponent
+                nodes={filteredNodes}
+                graphApp={this.props.graphApp}
+                graphExplorer={this.props.graphExplorer}
+              />
+            </Card>
+          </div>
+        ) : (
+          <div></div>
+        )}
+      </div>
+    );
+  };
+
+  private renderFilteredEntries = () => {
+    const filteredNodes = this.state.currentGraph.getFilteredNodes(
+      this.state.searchText,GraphNodeType.Entry
+    );
+    return (
+      <div>
+        {filteredNodes.size > 0 ? (
+          <div>
+            <Card
+              style={{
+                backgroundColor: GraphTheme.palette.primary.light,
+                margin: 5,
+              }}
+            >
+              <NodeListComponent
+                nodes={filteredNodes}
+                graphApp={this.props.graphApp}
+                graphExplorer={this.props.graphExplorer}
+              />
+            </Card>
+          </div>
+        ) : (
+          <div></div>
+        )}
+      </div>
+    );
+  };
+
+  renderListPanelLabel = () => {
+    const filteredNodes = this.state.currentGraph.getFilteredNodes(
+      this.state.searchText, GraphNodeType.List
+    );
     return (
       <div style={{ display: "flex", justifyContent: "center" }}>
         <Typography
@@ -215,7 +295,45 @@ export default class SearchView extends React.Component<
             color: GraphTheme.palette.primary.dark,
           }}
         >
-          {"Nodes: (" + this.state.filteredNodes.size + ")"}
+          {"List: (" + filteredNodes.size + ")"}
+        </Typography>
+      </div>
+    );
+  };
+
+  renderTagPanelLabel = () => {
+    const filteredNodes = this.state.currentGraph.getFilteredNodes(
+      this.state.searchText, GraphNodeType.Tag
+    );
+    return (
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <Typography
+          variant="body1"
+          style={{
+            fontWeight: "bold",
+            color: GraphTheme.palette.primary.dark,
+          }}
+        >
+          {"Tags: (" + filteredNodes.size + ")"}
+        </Typography>
+      </div>
+    );
+  };
+
+  renderEntryPanelLabel = () => {
+    const filteredNodes = this.state.currentGraph.getFilteredNodes(
+      this.state.searchText, GraphNodeType.Entry
+    );
+    return (
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        <Typography
+          variant="body1"
+          style={{
+            fontWeight: "bold",
+            color: GraphTheme.palette.primary.dark,
+          }}
+        >
+          {"Entries: (" + filteredNodes.size + ")"}
         </Typography>
       </div>
     );
@@ -254,7 +372,7 @@ export default class SearchView extends React.Component<
               color: GraphTheme.palette.primary.contrastText,
             }}
           >
-            Search graph
+            Search graph ({this.state.graphSize} nodes)
           </Typography>
         </div>
         {this.renderRightIcon()}
