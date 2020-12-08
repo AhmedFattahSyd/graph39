@@ -1,6 +1,4 @@
 import {
-  ThemeProvider,
-  Card,
   Typography,
   CircularProgress,
   Icon,
@@ -15,15 +13,15 @@ import GraphTheme from "../GraphTheme";
 import NamePanel from "./NamePanel";
 import SkeletonView from "./SkeletonView";
 import ViewableItem from "./ViewableItem";
+import TagPanel from "./TagPanel";
+import EntriesWithTagsPanel from "./EntriesWithTagsPanel";
+import EntriesTaggedComponent from "./EntriesTaggedComponent";
 
 interface NodeViewProps {
-  viewableItem: ViewableItem
-  currentNode: GraphNode; 
-  // should we pass the App object instead of these view params?
-  // viewWidth: number;
-  // viewMargin: number;
-  graphExplorer: GraphExplorer
-  graphApp: GraphApp
+  viewableItem: ViewableItem;
+  currentNode: GraphNode;
+  graphExplorer: GraphExplorer;
+  graphApp: GraphApp;
 }
 
 interface NodeViewState {
@@ -36,7 +34,6 @@ export default class NodeView extends React.Component<
   NodeViewProps,
   NodeViewState
 > {
-  
   constructor(props: NodeViewProps) {
     super(props);
     this.state = {
@@ -73,7 +70,7 @@ export default class NodeView extends React.Component<
               fontWeight: "bold",
             }}
           >
-            {this.state.currentNode.nodeTypes}
+            {this.state.currentNode.tagFlag ? "TAG" : ""}
           </Typography>
           <div style={{ width: "5px" }} />
           <Typography
@@ -83,7 +80,7 @@ export default class NodeView extends React.Component<
               color: GraphTheme.palette.primary.contrastText,
             }}
           >
-            {this.state.currentNode.name}
+            {this.state.currentNode.shortName}
           </Typography>
         </div>
         {this.renderRightIcon()}
@@ -96,7 +93,23 @@ export default class NodeView extends React.Component<
       <div>
         <NamePanel
           currentNode={this.state.currentNode}
-          nodeNameChanged={this.itemNameChanged}
+          nodeDataChanged={this.nodeDataChanged}
+        />
+        <TagPanel
+          currentNode={this.state.currentNode}
+          nodeDataChanged={this.nodeDataChanged}
+          graphApp={this.props.graphApp}
+          graphExplorer={this.props.graphExplorer}
+        />
+        <EntriesWithTagsPanel
+          currentNode={this.state.currentNode}
+          graphApp={this.props.graphApp}
+          graphExplorer={this.props.graphExplorer}
+        />
+        <EntriesTaggedComponent
+          currentNode={this.state.currentNode}
+          graphApp={this.props.graphApp}
+          graphExplorer={this.props.graphExplorer}
         />
       </div>
     );
@@ -106,7 +119,7 @@ export default class NodeView extends React.Component<
     return (
       <div>
         <Button
-            // onClick={() => this.handleSave()}
+          // onClick={() => this.handleSave()}
           style={{
             margin: 5,
             color: GraphTheme.palette.primary.contrastText,
@@ -146,9 +159,10 @@ export default class NodeView extends React.Component<
     );
   };
 
-  handleDelete = () => {
-    // this.props.deleteItem(this.state.currentNode);
-    // this.props.closeView(this.state.currentNode);
+  handleDelete = async () => {
+    console.log("handleDelete");
+    await this.props.graphExplorer.deleteNode(this.state.currentNode);
+    this.props.graphApp.closeView(this.props.viewableItem);
   };
 
   handleSaveAndClose = async () => {
@@ -156,11 +170,23 @@ export default class NodeView extends React.Component<
     this.props.graphApp.closeView(this.props.viewableItem);
   };
 
-  itemNameChanged = async (newName: string) => {
+  nodeDataChanged = async () => {
     const node = this.state.currentNode;
-    node.name = newName;
+    // node.name = newName;
     await this.setState({ itemDataChanged: true, currentNode: node });
     await this.updateCurrentNode();
+    this.props.graphApp.refreshOpenItems()
+  };
+
+  static getDerivedStateFromProps = (
+    props: NodeViewProps,
+    state: NodeViewState
+  ) => {
+    state = {
+      ...state,
+      currentNode: props.currentNode,
+    };
+    return state;
   };
 
   updateCurrentNode = async () => {
@@ -224,54 +250,26 @@ export default class NodeView extends React.Component<
     );
   };
 
-  render = ()=>{
-    return(
-      <SkeletonView 
-      graphApp={this.props.graphApp}
-      renderHeader={this.renderHeader}
-      renderBody={this.renderBody}
-      renderButtons={this.renderButtons}
-      />
-    )
-  }
-
-  renderOld = () => {
+  render = () => {
     return (
-      <ThemeProvider theme={GraphTheme}>
-        <div>
-          <Card
-            elevation={1}
-            style={{
-              maxWidth: this.props.graphApp.viewWidth,
-              minWidth: this.props.graphApp.viewWidth,
-              margin: this.props.graphApp.viewMargin,
-              marginTop: 5,
-              backgroundColor: GraphTheme.palette.primary.dark,
-            }}
-          >
-            {this.renderHeader()}
-            {this.renderBody()}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-around",
-                margin: 5,
-              }}
-            ></div>
-            {this.renderButtons()}
-          </Card>
-        </div>
-      </ThemeProvider>
+      <SkeletonView
+        graphApp={this.props.graphApp}
+        renderHeader={this.renderHeader}
+        renderBody={this.renderBody}
+        renderButtons={this.renderButtons}
+      />
     );
   };
 
   renderButtons = () => {
-    return this.state.itemDataChanged
-      ? this.renderSaveAndClose()
-      : this.renderClose();
+    return this.renderClose();
+    // return this.state.itemDataChanged
+    //   ? this.renderSaveAndClose()
+      // : this.renderClose();
   };
 
   handleClose = () => {
+    console.log("handleClose");
     if (!this.state.itemDataChanged) {
       this.props.graphApp.closeView(this.props.viewableItem);
     } else {
@@ -280,7 +278,7 @@ export default class NodeView extends React.Component<
       // use delete or save it
       // better we should disable close
     }
-  }
+  };
 
   renderClose = () => {
     return (

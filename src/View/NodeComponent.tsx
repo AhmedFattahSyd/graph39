@@ -40,6 +40,7 @@ export default class NodeComponent extends React.Component<
               fontSize: "12px",
               fontWeight: "bold",
               color: GraphTheme.palette.primary.dark,
+              marginLeft:5,
             }}
             align="left"
           >

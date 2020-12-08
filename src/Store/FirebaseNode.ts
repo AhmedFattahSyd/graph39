@@ -1,23 +1,20 @@
+import { NodeData } from "./../Core/GraphNode";
 import GraphNode from "../Core/GraphNode";
-import { GraphNodeType } from "../Core/NodeTypes";
 import StoredNode from "./StoredNode";
 
-export interface FirebaseNodeData {
-  name: string;
-  types: GraphNodeType[]
-}
+export interface FirebaseNodeData extends NodeData {}
 
 export default class FirebaseNode extends StoredNode {
   getData = (): FirebaseNodeData => {
     const data: FirebaseNodeData = {
       name: this.node.name,
-      types: Array.from(this.node.nodeTypes)
+      tagFlag: this.node.tagFlag,
     };
     return data;
   };
 
   static fromData = (id: string, data: FirebaseNodeData) => {
-    const node = new GraphNode(data.name, id,data.types);
+    const node = new GraphNode(data.name, id, data.tagFlag);
     return node;
   };
 }

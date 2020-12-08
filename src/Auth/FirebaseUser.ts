@@ -17,24 +17,29 @@ export default class FirebaseUser extends User {
   }
 
   init = async () => {
+    // console.log("FirebaseUser: init");
     try {
       firebase.initializeApp(FirebaseConfig);
       this._auth = firebase.auth();
       await firebase.firestore().enablePersistence();
-      await this._auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      await this._auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       // console.log("FirebaseUser: init(): auth:", this._auth);
       if (this.auth !== null) {
         if (this._auth.currentUser !== null) {
           this.setUserSignedOn(this._auth.currentUser);
-        }else{
-          console.log("FirebaseUser: init(): currentUser is null")
+          // console.log(
+          //   "FirebaseUser: init(): currentUser:",
+          //   this._auth.currentUser
+          // );
+        } else {
+          throw new Error(`FirebaseUser: init: auth.currentUser is null`);
         }
         this.auth.onAuthStateChanged((authUser) => {
           authUser ? this.setUserSignedOn(authUser) : this.setUserSignedOff();
         });
       } else {
         throw new Error(
-          "firebaseUser: initFirebase: Cannot set listener on auth. auth is null"
+          "firebaseUser: init: Cannot set listener on auth. auth is null"
         );
       }
     } catch (error) {
@@ -66,7 +71,7 @@ export default class FirebaseUser extends User {
   };
 
   setUserSignedOff = () => {
-    console.log("setUserSignedOff");
+    // console.log("setUserSignedOff");
     this._authUser = null;
     this._signedOn = false;
     this._name = null;

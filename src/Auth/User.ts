@@ -16,7 +16,9 @@ export default class User {
 
   signOff = async () => {};
 
-  init = async () => {};
+  init = async () => {
+    console.log("User: init")
+  };
 
   getUserData = (): UserData =>{
     const userData: UserData = {name: this._name}

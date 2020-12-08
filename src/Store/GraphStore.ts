@@ -1,28 +1,37 @@
-import User from "../Auth/User"
-import GraphNode from "../Core/GraphNode"
+import User from "../Auth/User";
+import GraphEdge from "../Core/GraphEdge";
+import GraphNode from "../Core/GraphNode";
+import PersistentGraph from "./PersistentGraph";
 
-export default class GraphStore{
+export default class GraphStore {
+  protected _persistentGraph: PersistentGraph;
 
-    private _user: User
-    public get user(): User {
-        return this._user
-    }
-    public set user(value: User) {
-        this._user = value
-    }
+  protected _user: User | null;
+  // public get user(): User {
+  //     return this._user
+  // }
+  // public set user(value: User) {
+  //     this._user = value
+  // }
 
-    constructor(user: User){
-        this._user=user
-    }
+  constructor(user: User | null, persistentGraph: PersistentGraph) {
+    this._user = user;
+    this._persistentGraph = persistentGraph;
+  }
 
-    init = async()=>{
-    }
+  deleteNode = async (node: GraphNode) => {}
 
-    getData = async(): Promise<string> =>{
-        return ""
-    }
+  deleteEdge = async (tagEdge: GraphEdge) => {};
 
-    updateNode=(node: GraphNode)=>{
+  createNewEdge = async (edge: GraphEdge) => {};
 
-    }
+  init = async () => {};
+
+  getData = async (): Promise<string> => {
+    return "";
+  };
+
+  updateNode = (node: GraphNode) => {};
+
+  createNewNode = async (node: GraphNode) => {};
 }

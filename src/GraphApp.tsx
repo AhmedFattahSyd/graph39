@@ -24,7 +24,6 @@ import NodeView from "./View/NodeView";
 import ViewableItem from "./View/ViewableItem";
 import { ViewableItemClass } from "./View/ViewableItemClass";
 import SearchView from "./View/SearchView";
-import { GraphNodeType } from "./Core/NodeTypes";
 
 interface AppProps {}
 
@@ -87,31 +86,9 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
   }
 
   createNewEntry = async () => {
-    const newNode = await this.graphExplorer.createNewNode([GraphNodeType.Entry]);
-    if (newNode !== null) {
-      const viewableItem = new ViewableItem(ViewableItemClass.Node, newNode);
-      const openViewableItems = this.state.openViewableItems;
-      openViewableItems.set(viewableItem.id, viewableItem);
-      this.setState({ openViewableItems: openViewableItems });
-    } else {
-      this.showMessage("New node could not be created", MessageType.Error);
-    }
-  };
-
-  createNewList = async () => {
-    const newNode = await this.graphExplorer.createNewNode([GraphNodeType.List]);
-    if (newNode !== null) {
-      const viewableItem = new ViewableItem(ViewableItemClass.Node, newNode);
-      const openViewableItems = this.state.openViewableItems;
-      openViewableItems.set(viewableItem.id, viewableItem);
-      this.setState({ openViewableItems: openViewableItems });
-    } else {
-      this.showMessage("New node could not be created", MessageType.Error);
-    }
-  };
-
-  createNewTag = async () => {
-    const newNode = await this.graphExplorer.createNewNode([GraphNodeType.Tag]);
+    const newNode = await this.graphExplorer.createNewNode(
+      "New entry"
+    );
     if (newNode !== null) {
       const viewableItem = new ViewableItem(ViewableItemClass.Node, newNode);
       const openViewableItems = this.state.openViewableItems;
@@ -199,17 +176,18 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
             style={{
               paddingTop: 5,
               display: "flex",
-              justifyContent: "flex-start",
+              // justifyContent: "flex-start",
               flexWrap: "wrap",
               textAlign: "center",
               width: this.displayWidth,
               alignItems: "flex-start",
               alignContent: "flex-start",
             }}
-          ></div>
-          {Array.from(this.state.openViewableItems.values()).map((node) => (
-            <div key={node.id}>{this.renderViewableItem(node)}</div>
-          ))}
+          >
+            {Array.from(this.state.openViewableItems.values()).map((node) => (
+              <div key={node.id}>{this.renderViewableItem(node)}</div>
+            ))}
+          </div>
           {this.renderMessage()}
           {this.renderDrawer()}
         </div>
@@ -291,12 +269,6 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
         <Divider />
         <List style={{ width: "300px" }}>
           <Divider />
-          <ListItem button onClick={this.createNewList}>
-            <ListItemText primary="New list" />
-          </ListItem>
-          <ListItem button onClick={this.createNewTag}>
-            <ListItemText primary="New tag" />
-          </ListItem>
           <ListItem button onClick={this.createNewEntry}>
             <ListItemText primary="New entry" />
           </ListItem>
@@ -359,16 +331,16 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     }
   };
 
+  refreshOpenItems = ()=>{
+    const openItems = this.state.openViewableItems
+    this.setState({openViewableItems: openItems})
+  }
+
   toggleDrawer = (open: boolean) => () => {
     this.setState({
       sidebarVisible: open,
     });
   };
-
-  // componentDidMount = async () => {
-  //   await this.graphExplorer.init();
-  //   this.openSearchView();
-  // };
 
   componentDidMount = async () => {
     try {
@@ -402,7 +374,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
       this._viewWidth = this.maxViewWidth;
       this.displayWidth = this.maxDisplayWidth;
     }
-    console.log("displayWidth:", this.displayWidth);
+    // console.log("displayWidth:", this.displayWidth);
   };
 
   openSearchView = () => {

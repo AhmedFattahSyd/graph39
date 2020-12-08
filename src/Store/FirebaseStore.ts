@@ -1,3 +1,4 @@
+import { FirebaseEdge, FirebaseEdgeData } from "./FirebaseEdge";
 import GraphStore from "./GraphStore";
 import User from "../Auth/User";
 import * as firebase from "firebase/app";
@@ -7,27 +8,32 @@ import "firebase/firebase-firestore";
 import FirebaseUser from "../Auth/FirebaseUser";
 import GraphNode from "../Core/GraphNode";
 import FirebaseNode, { FirebaseNodeData } from "./FirebaseNode";
-import GraphExplorer from "../GraphExplorer/GraphExplorer";
-import Graph from "../Core/Graph";
-import FirebaseGraph, { FirebaseGraphData } from "./FirebaseGraph";
+// import GraphExplorer from "../GraphExplorer/GraphExplorer";
+// import Graph from "../Core/Graph";
+import { FirebaseGraphData } from "./FirebaseGraph";
+import GraphEdge from "../Core/GraphEdge";
+import PersistentEdge from "./PersistentEdge";
+// import PersistentGraph from "./PersistentGraph";
 
 export default class FirebaseStore extends GraphStore {
   private _db: firebase.firestore.Firestore | null = null;
   private _authUser: firebase.User | null = null;
   readonly UserCollectionName = "users";
   readonly NodeCollectionName = "nodes";
+  readonly EdgeCollectionName = "edges";
   readonly GraphCollectionName = "graphs";
-  private graphExporer: GraphExplorer;
-  private currentGraph: Graph;
 
-  constructor(user: User, graphExplorer: GraphExplorer, graph: Graph) {
-    super(user);
-    this.graphExporer = graphExplorer;
-    this.currentGraph = graph;
-  }
+  // private graphExporer: GraphExplorer;
+  // private currentGraph: Graph;
+
+  // constructor(user: User) {
+  //   super(user);
+  //   // this.graphExporer = graphExplorer;
+  //   // this.currentGraph = graph;
+  // }
 
   init = async () => {
-    this._authUser = (this.user as FirebaseUser).authUser;
+    this._authUser = (this._user as FirebaseUser).authUser;
     if (this._authUser === null) {
       throw new Error("FirebaseStore: init: authUser is null");
     }
@@ -54,7 +60,9 @@ export default class FirebaseStore extends GraphStore {
     try {
       await this.loadCurrentGraph();
       await this.loadNodes();
-      await this.graphExporer.storeUpdated();
+      await this.loadEdges();
+      // await this.graphExporer.storeUpdated();
+      await this._persistentGraph.graphUpdated();
     } catch (error) {
       throw error;
     }
@@ -66,17 +74,82 @@ export default class FirebaseStore extends GraphStore {
         ?.collection(this.UserCollectionName)
         .doc(this._authUser?.uid)
         .collection(this.GraphCollectionName)
-        .doc(this.currentGraph.id)
+        .doc(this._persistentGraph.graph.id)
         .collection(this.NodeCollectionName)
+        .get();
+      if (docRef !== undefined) {
+        // console.log(
+        //   "FirebaseStore: loadNodes: docRef:",
+        //   docRef,
+        //   "graph id",
+        //   this._persistentGraph.graph.id
+        // );
+        docRef.forEach(async (doc) => {
+          const docData = doc.data();
+          // console.log("FirebaseStore: loadNodes: doc data:", docData);
+          await this._persistentGraph.addToNodes(
+            doc.id,
+            docData as FirebaseNodeData
+          );
+        });
+        // console.log("FirebaseStore: loadNodes: nodes:", this.graph.nodes);
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  loadEdges = async () => {
+    try {
+      const docRef = await this._db
+        ?.collection(this.UserCollectionName)
+        .doc(this._authUser?.uid)
+        .collection(this.GraphCollectionName)
+        .doc(this._persistentGraph.graph.id)
+        .collection(this.EdgeCollectionName)
         .get();
       if (docRef !== undefined) {
         docRef.forEach(async (doc) => {
           // console.log("FirebaseStore: loadNodes: doc:", doc);
           const docData = doc.data();
-          await this.addToNodes(doc.id, docData as FirebaseNodeData);
+          await this._persistentGraph.addToEdges(
+            doc.id,
+            docData as FirebaseEdgeData
+          );
         });
         // console.log("FirebaseStore: loadNodes: nodes:", this.graph.nodes);
       }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  deleteEdge = async (edge: GraphEdge) => {
+    try {
+      await this._db
+        ?.collection(this.UserCollectionName)
+        .doc(this._authUser?.uid)
+        .collection(this.GraphCollectionName)
+        .doc(this._persistentGraph.graph.id)
+        .collection(this.EdgeCollectionName)
+        .doc(edge.id)
+        .delete();
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  deleteNode = async (node: GraphNode) => {
+    try {
+      await this._db
+        ?.collection(this.UserCollectionName)
+        .doc(this._authUser?.uid)
+        .collection(this.GraphCollectionName)
+        .doc(this._persistentGraph.graph.id)
+        .collection(this.NodeCollectionName)
+        .doc(node.id)
+        .delete();
+      // console.log("Deleting node: refDoc:", refDoc);
     } catch (error) {
       throw error;
     }
@@ -103,57 +176,94 @@ export default class FirebaseStore extends GraphStore {
   };
 
   setCurrentGraph = (id: string, data: FirebaseGraphData) => {
-    console.log("setCurrentGraph: loaded graph:", data.name);
+    // console.log("setCurrentGraph: loaded graph:", data.name);
     // load the graph that matched the current graph
-    if (data.name === this.currentGraph.name) {
-      console.log("setCurrentGraph: graph has been set");
-      this.currentGraph.id = id;
+    if (data.name === this._persistentGraph.graph.name) {
+      // console.log("setCurrentGraph: graph has been set");
+      this._persistentGraph.graph.id = id;
     }
   };
 
-  addToNodes = async (id: string, data: FirebaseNodeData) => {
-    const newNode = FirebaseNode.fromData(id, data);
-    this.currentGraph.nodes.set(id, newNode);
-  };
+  // addToNodes = async (id: string, data: FirebaseNodeData) => {
+  //   const newNode = FirebaseNode.fromData(id, data);
+  //   this.currentGraph.nodes.set(id, newNode);
+  // };
+
+  // addToEdges = async (id: string, data: FirebaseEdgeData) => {
+  //   try {
+  //     const newEdge = FirebaseEdge.fromData(id, data, this.currentGraph);
+  //     if (newEdge !== undefined) {
+  //       this.currentGraph.addEdge(newEdge);
+  //     } else {
+  //       throw new Error(
+  //         `FirebaseStore: addToEdges: cannot create edge with id:${id}`
+  //       );
+  //     }
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // };
 
   createNewNode = async (node: GraphNode) => {
-    const nodeData = node.getNodeData();
+    const storedNode = new FirebaseNode(node);
+    const nodeData = storedNode.getData();
     if (this._db !== null) {
       await this._db
         .collection(this.UserCollectionName)
         .doc(this._authUser?.uid)
         .collection(this.GraphCollectionName)
-        .doc(this.currentGraph.id)
+        .doc(this._persistentGraph.graph.id)
         .collection(this.NodeCollectionName)
         .doc(node.id)
         .set(nodeData);
-      console.log("FirebaseStore: node has been created");
+      // console.log("FirebaseStore: node has been created");
+    } else {
+      throw new Error("FirebaseStore: db is null");
+    }
+  };
+
+  createNewEdge = async (edge: GraphEdge) => {
+    const storedEdge: PersistentEdge = new FirebaseEdge(edge);
+    const edgeData = storedEdge.getData();
+    if (this._db !== null) {
+      await this._db
+        .collection(this.UserCollectionName)
+        .doc(this._authUser?.uid)
+        .collection(this.GraphCollectionName)
+        .doc(this._persistentGraph.graph.id)
+        .collection(this.EdgeCollectionName)
+        .doc(edge.id)
+        .set(edgeData);
+      // console.log("FirebaseStore: node has been created");
     } else {
       throw new Error("FirebaseStore: db is null");
     }
   };
 
   createUser = async () => {
-    const userData = this.user.getUserData();
-    if (this._db !== null) {
-      await this._db
-        .collection(this.UserCollectionName)
-        .doc(this._authUser?.uid)
-        .set(userData);
-    } else {
-      throw new Error("FirebaseStore: db is null");
+    if (this._persistentGraph.user !== null) {
+      const user = this._persistentGraph.user;
+      const userData = user.getUserData();
+      if (this._db !== null) {
+        await this._db
+          .collection(this.UserCollectionName)
+          .doc(this._authUser?.uid)
+          .set(userData);
+      } else {
+        throw new Error("FirebaseStore: db is null");
+      }
     }
   };
 
   createCurrentGraph = async () => {
     if (this._db !== null) {
-      const storedGraph = new FirebaseGraph(this.currentGraph);
+      // const storedGraph = new FirebaseGraph(this.currentGraph);
       await this._db
         .collection(this.UserCollectionName)
         .doc(this._authUser?.uid)
         .collection(this.GraphCollectionName)
-        .doc(this.currentGraph.id)
-        .set(storedGraph.getData());
+        .doc(this._persistentGraph.graph.id)
+        .set(this._persistentGraph.getData());
     } else {
       throw new Error("FirebaseStore: db is null");
     }
@@ -167,7 +277,7 @@ export default class FirebaseStore extends GraphStore {
           .collection(this.UserCollectionName)
           .doc(this._authUser?.uid)
           .collection(this.GraphCollectionName)
-          .doc(this.currentGraph.id)
+          .doc(this._persistentGraph.graph.id)
           .collection(this.NodeCollectionName)
           .doc(node.id)
           .set(nodeData);
@@ -179,11 +289,11 @@ export default class FirebaseStore extends GraphStore {
     let userExists = false;
     if (this._db !== null) {
       const users = await this._db?.collection(this.UserCollectionName).get();
-      console.log("FirebaseStore: users:", users);
+      // console.log("FirebaseStore: users:", users);
       if (users !== null) {
         if (users?.size !== 0) {
           users?.forEach((storedUser) => {
-            console.log("FirebaseStore: StoredUser:", storedUser);
+            // console.log("FirebaseStore: StoredUser:", storedUser);
             if (storedUser.id === this._authUser?.uid) {
               userExists = true;
             }
@@ -196,7 +306,7 @@ export default class FirebaseStore extends GraphStore {
     return userExists;
   };
 
-  getData = async (): Promise<string> => {
-    return "Firebase";
-  };
+  // getData = async (): Promise<string> => {
+  //   return "Firebase";
+  // };
 }

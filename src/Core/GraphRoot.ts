@@ -1,9 +1,9 @@
 import { v4 as uuid } from "uuid";
-import { ObjectClass } from "./ObjectClass";
+import { GraphObjectClass } from "./GraphObjectClass";
 
 export default class GraphRoot {
-  protected _class: ObjectClass;
-  public get class(): ObjectClass {
+  protected _class: GraphObjectClass;
+  public get class(): GraphObjectClass {
     return this._class;
   }
 
@@ -22,6 +22,13 @@ export default class GraphRoot {
   public set name(value: string) {
     this._name = value;
   }
+  private _updateAt: Date = new Date()
+  public get updatedAt(): Date {
+    return this._updateAt;
+  }
+  public set updatedAt(value: Date) {
+    this._updateAt = value;
+  }
 
   constructor(name: string = "No name", id: string = "") {
     if (id === "") {
@@ -31,6 +38,6 @@ export default class GraphRoot {
     }
     this._name = name;
 
-    this._class = ObjectClass.Root;
+    this._class = GraphObjectClass.Root;
   }
 }

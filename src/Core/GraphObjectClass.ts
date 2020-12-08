@@ -1,4 +1,4 @@
-export enum ObjectClass {
+export enum GraphObjectClass {
   Root = "Root",
   Graph = "Graph",
   Node = "Node",
