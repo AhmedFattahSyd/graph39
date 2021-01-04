@@ -1,3 +1,4 @@
+import { GraphEdgeData } from './../Core/GraphEdge';
 // Explorer module
 // provide all functions apart from UI
 //
@@ -8,15 +9,27 @@ import User from "../Auth/User";
 import FirebaseGraph from "../Store/FirebaseGraph";
 import PersistentGraph from "../Store/PersistentGraph";
 import FirebaseUser from "../Auth/FirebaseUser";
+import ImportDataAgent37 from "../Store/ImportDataAgent37";
+import ExportImportAgentV2 from '../Store/ExportImportAgentV2';
 
 export default class GraphExplorer {
-  // private user = new FirebaseUser();
   private _user: User | null = null;
+  public get user(): User | null {
+    return this._user;
+  }
   private _userSignedOn = false;
   private _userName = "No user signon";
   private _mainGraph = new Graph("MainGraph");
-  public get mainGraph(): Graph {
+  public get mainGraph() {
     return this._mainGraph;
+  }
+  private _error: Error | null = null;
+  private _initialDataLoadInProgress = true;
+  public get initialDataLoadInProgress() {
+    return this._initialDataLoadInProgress;
+  }
+  public set initialDataLoadInProgress(value) {
+    this._initialDataLoadInProgress = value;
   }
   private _persistentGraph: PersistentGraph;
   // private _persistentGraph = new FirebaseGraph(
@@ -29,14 +42,18 @@ export default class GraphExplorer {
   private refershData: (
     userSignedOn: boolean,
     userName: string | null,
-    graph: Graph
+    graph: Graph,
+    error: Error | null,
+    initialDataLoadInProgress: boolean,
   ) => void;
 
   constructor(
     refreshData: (
       userSignedOn: boolean,
       userName: string | null,
-      graph: Graph
+      graph: Graph,
+      error: Error | null,
+      initialDataLoadInProgress: boolean,
     ) => void
   ) {
     this.refershData = refreshData;
@@ -48,6 +65,21 @@ export default class GraphExplorer {
     );
   }
 
+  public importDataV1 = async (data: string) => {
+    const importAgent = new ImportDataAgent37(this);
+    await importAgent.importData(data);
+  };
+
+  public importDataV2 = async (data: string) => {
+    const importAgent = new ExportImportAgentV2(this);
+    await importAgent.importData(data);
+  };
+
+  public exportData = async ()=>{
+    const exportImportAgent = new ExportImportAgentV2(this)
+    await exportImportAgent.exportData()
+  }
+
   graphUpdated = async () => {
     await this.invokeRefreshData();
   };
@@ -56,26 +88,8 @@ export default class GraphExplorer {
     await this._persistentGraph.deleteNode(node);
   };
 
-  // deleteTagEdges = async (tagEdges: GraphEdge[]) => {
-  //   await tagEdges.forEach(async (tagEdge) => {
-  //     await this.currentStore.deleteEdge(tagEdge);
-  //   });
-  // };
-
   init = async () => {
-    // await this.user.init();
-    // if (this.user !== null) {
-    //   // await this.user.signOn()
-    //   if (this.user.signedOn) {
-    //     await this.currentStore.init();
-    //   } else {
-    //     // do nothing for the timebeing to avoid signon popup coming very often in testing
-    //     // throw new Error("GraphExplorer: init: cannot sign user on")
-    //   }
-    // }
-    // console.log("GraphExplorer: init: user:", this._user);
     await this._persistentGraph.init();
-    // console.log("GraphExplorer: init: user:", this._user);
     const user = this._user;
     if (user !== null) {
       if (user.name !== null) this._userName = user.name;
@@ -86,34 +100,92 @@ export default class GraphExplorer {
     await this.invokeRefreshData();
   };
 
+  createNewEntryAndTagIt = async (
+    existingEntry: GraphNode,
+    newEntryName: string
+  ) => {
+    await this._persistentGraph.createNewEntryAndTagIt(
+      existingEntry,
+      newEntryName
+    );
+  };
+
+  createNewParentOrChild = async (
+    node: GraphNode,
+    name: string,
+    parent: boolean
+  ) => {
+    parent
+      ? await this._persistentGraph.createNewParent(node, name)
+      : await this._persistentGraph.createNewChild(node, name);
+  };
+
+  addParentToNode = async (childNode: GraphNode, parentNode: GraphNode) => {
+    await this._persistentGraph.addParentToNode(childNode, parentNode);
+  };
+
+  addChildToNode = async (childNode: GraphNode, parentNode: GraphNode) => {
+    await this._persistentGraph.addChildToNode(parentNode, childNode);
+  };
+
+  public errorOccured = (error: Error) => {
+    this._error = error;
+    this.invokeRefreshData();
+  };
+
+  removeParentFromNode = async (
+    childNode: GraphNode,
+    parentNode: GraphNode
+  ) => {
+    await this._persistentGraph.removeParentFromNode(childNode, parentNode);
+  };
+
+  createNewEntryAndTagItWithTag = async (
+    existingTag: GraphNode,
+    newEntryName: string
+  ) => {
+    await this._persistentGraph.createNewEntryAndTagItWithTag(
+      existingTag,
+      newEntryName
+    );
+  };
+
+  removeParent = (childNode: GraphNode, parentNode: GraphNode) => {};
+
+  tagNodeWithAnotherNodeTags = async (
+    nodeId: string,
+    anotherNode: GraphNode
+  ) => {
+    await this._persistentGraph.tagNodeWithAnotherNodeTags(nodeId, anotherNode);
+  };
+
   createNewNode = async (
     name: string,
-    tagFlag: boolean = false
+    tagFlag: boolean = false,
+    contextFlag: boolean = false,
+    starred = false
   ): Promise<GraphNode> => {
-    try {
-      // const newNode = new GraphNode(name, "",tagFlag);
-      // this.currentStore.createNewNode(newNode);
-      // this._mainGraph.addNode(newNode)
-      // this.invokeRefreshData();
-      // return newNode;
-      const newNode = await this._persistentGraph.createNewNode(name, tagFlag);
-      this.invokeRefreshData();
-      return newNode;
-    } catch (error) {
-      throw error;
+    // console.log("GraphExplorer: createNewNode")
+    return await this._persistentGraph.createNewNode(
+      name,
+      tagFlag,
+      contextFlag,
+      starred
+    );
+  };
+
+  importNode = async (node: GraphNode) => {
+    // import only if node does not exist
+    if(!this.mainGraph.doesNodeExist(node.id)){
+      await this._persistentGraph.importNode(node);
     }
   };
 
-  // createNewTagAndAddToNode = async (node: GraphNode, newTagName: string) => {
-  //   try {
-  //     const newTag = await this.createNewNode(newTagName, true);
-  //     if (newTag !== undefined) {
-  //       await this.addTagToNode(node, newTag);
-  //     }
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // };
+  importEdge = async(edgeId: string,edgeData: GraphEdgeData)=>{
+    if(!this.mainGraph.doesEdgeExist(edgeId)){
+      this._persistentGraph.importEdge(edgeId,edgeData)
+    }
+  }
 
   createNewTagAndAddToNode = async (node: GraphNode, newTagName: string) => {
     return await this._persistentGraph.createNewTagAndAddToNode(
@@ -122,65 +194,33 @@ export default class GraphExplorer {
     );
   };
 
-  // addTagToNode = async (node: GraphNode, tag: GraphNode) => {
-  //   try {
-  //     const newEdge = this.mainGraph.addTagToNode(node, tag);
-  //     await this.currentStore.createNewEdge(newEdge);
-  //     // const newEdge = new GraphEdge(GraphEdgeType.Tag, node, tag, "");
-  //     //add to graph which adds to nodes as well
-  //     // this.mainGraph.addEdge(newEdge);
-  //     // add to node and tag
-  //     // node.addTagEdge(newEdge)
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // };
-
   addTagToNode = async (node: GraphNode, tag: GraphNode) => {
     return await this._persistentGraph.addTagToNode(node, tag);
   };
 
-  // removeTagFromNode = async (node: GraphNode, tag: GraphNode) => {
-  //   try {
-  //     const tagEdges = this.mainGraph.getTagEdge(node, tag);
-  //     // console.log("tagEdges: ",tagEdges)
-  //     if (tagEdges.length === 1) {
-  //       const tagEdge = tagEdges[0];
-  //       await this.currentStore.deleteEdge(tagEdge);
-  //       this.mainGraph.deleteEdge(tagEdge);
-  //     } else {
-  //       throw new Error(
-  //         `GraphExplorer: removeTagFromNode: invalid return from graph getTagEdge: ${tagEdges} `
-  //       );
-  //     }
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // };
+  addTagToNodeWithId = async (nodeId: string, tag: GraphNode) => {
+    return await this._persistentGraph.addTagToNodeWithId(nodeId, tag);
+  };
 
   removeTagFromNode = async (node: GraphNode, tag: GraphNode) => {
     await this._persistentGraph.removeTagFromNode(node, tag);
-    // graphUpdated is/should be invoke in PersistentGraph after each operation
-    // this.invokeRefreshData()
   };
 
-  // updateNode = async (node: GraphNode) => {
-  //   try {
-  //     await this.currentStore.updateNode(node);
-  //     await this.invokeRefreshData();
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // };
-
   updateNode = async (node: GraphNode) => {
+    // console.log("GraphExplorer: updateNode: node:", node);
     return await this._persistentGraph.updateNode(node);
   };
 
   invokeRefreshData = async () => {
     //refreshData = async(userSignedOn: boolean, userName: string | null)
     // console.log("GraphExplorer: invokeRefereshData: userName:", this._userName);
-    await this.refershData(this._userSignedOn, this._userName, this._mainGraph);
+    await this.refershData(
+      this._userSignedOn,
+      this._userName,
+      this._mainGraph,
+      this._error,
+      this.initialDataLoadInProgress,
+    );
   };
 
   signOn = async () => {

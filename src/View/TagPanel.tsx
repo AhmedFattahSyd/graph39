@@ -17,7 +17,7 @@ interface TagPanelProps {
 interface TagPanelState {
   currentNode: GraphNode;
   nameText: string;
-  numberOfTags: number,
+  numberOfTags: number;
 }
 
 export default class TagPanel extends React.Component<
@@ -33,9 +33,9 @@ export default class TagPanel extends React.Component<
     };
   }
 
-  tagsHaveChanged =()=>{
-    this.setState({numberOfTags: this.state.currentNode.tags.size})
-  }
+  tagsHaveChanged = () => {
+    this.setState({ numberOfTags: this.state.currentNode.tags.size });
+  };
 
   render = () => {
     return (
@@ -52,7 +52,13 @@ export default class TagPanel extends React.Component<
 
   renderLabel = () => {
     return (
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
         <Typography
           variant="body1"
           style={{
@@ -62,6 +68,32 @@ export default class TagPanel extends React.Component<
         >
           {"Tags (" + this.state.currentNode.tags.size + ")"}
         </Typography>
+        {this.renderTagSummary()}
+      </div>
+    );
+  };
+
+  renderTagSummary = () => {
+    return (
+      <div style={{ display: "flex" }}>
+        {Array.from(this.state.currentNode.tags.values()).map((tag) => {
+          return (
+            <div key={tag.id}>
+              {/* <div style={{ width: 10 }}></div> */}
+              <Typography
+                variant="body1"
+                style={{
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  color: Theme.palette.primary.dark,
+                  marginLeft: 5,
+                }}
+              >
+                {tag.name}
+              </Typography>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -77,7 +109,7 @@ export default class TagPanel extends React.Component<
       >
         <Card
           elevation={1}
-          style={{ textAlign: "left", margin: 0, padding: 5 }}
+          style={{ textAlign: "left", margin: 0, padding: 0 }}
         >
           <TagComponent
             currentNode={this.state.currentNode}

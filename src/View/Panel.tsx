@@ -1,6 +1,6 @@
 // requires review and cleanup
 // may be it can be packaged seprately as a resuable component
-import { Card, CardActionArea, Icon, Tooltip } from "@material-ui/core";
+import { Card, Icon, Tooltip } from "@material-ui/core";
 import React from "react";
 import Theme from "../GraphTheme";
 
@@ -10,6 +10,7 @@ interface PanelProps {
   renderLabelFun: Function;
   renderDetailsFun: Function;
   initialStateOpen: boolean;
+  showLabel?: boolean;
   leftSideFunction?: Function;
   leftSideFunctionIcon?: string;
   leftSideFunctionToolTip?: string;
@@ -47,6 +48,21 @@ export default class Panel extends React.Component<PanelProps, PanelState> {
   }
 
   render = () => {
+    const showLabel =
+      this.props.showLabel === undefined ? true : this.props.showLabel;
+    return (
+      <div>
+        {showLabel ? this.renderLabel() : <div></div>}
+        {this.state.panelExpanded || !showLabel ? (
+          this.props.renderDetailsFun(this.props.index)
+        ) : (
+          <div></div>
+        )}
+      </div>
+    );
+  };
+
+  renderLabel = () => {
     return (
       <div>
         <Card
@@ -64,10 +80,10 @@ export default class Panel extends React.Component<PanelProps, PanelState> {
             }}
           >
             {this.renderLeftFunctionIcon()}
-            <CardActionArea onClick={this.handleToggleExpansionState}>
-              <div style={{ display: "flex", justifyContent: "center" }}>
-                {this.props.renderLabelFun(this.props.index)}
-                {/* <Typography
+            {/* <CardActionArea onClick={this.handleToggleExpansionState}> */}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              {this.props.renderLabelFun(this.props.index)}
+              {/* <Typography
                   variant="body1"
                   style={{
                     fontWeight: "bold",
@@ -76,15 +92,15 @@ export default class Panel extends React.Component<PanelProps, PanelState> {
                 >
                   {this.props.renderLabelFun(this.props.index)}
                 </Typography> */}
-              </div>
-            </CardActionArea>
+            </div>
+            {/* </CardActionArea> */}
             {this.renderExpansionIcon()}
           </div>
-          {this.state.panelExpanded ? (
+          {/* {this.state.panelExpanded ? (
             this.props.renderDetailsFun(this.props.index)
           ) : (
             <div></div>
-          )}
+          )} */}
         </Card>
       </div>
     );

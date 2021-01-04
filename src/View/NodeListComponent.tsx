@@ -8,6 +8,7 @@ interface NodeListComponentProps {
   nodes: Map<string, GraphNode>;
   graphApp: GraphApp;
   graphExplorer: GraphExplorer;
+  removeFromList?: Function;
 }
 interface NodeListComponentState {
   nodes: Map<string, GraphNode>;
@@ -23,12 +24,30 @@ export default class NodeListComponent extends React.Component<
   }
 
   render = () => {
+    // const rootNodes = this.state.nodes
+    const rootNodes = this.getRootNodes();
     return (
       <div>
-        {Array.from(this.state.nodes.values()).map((node) =>
+        {Array.from(rootNodes.values()).map((node) =>
           this.renderNodeComponent(node)
         )}
       </div>
+    );
+  };
+
+  deleteNode = async (node: GraphNode) => {
+    await this.props.graphExplorer.deleteNode(node);
+    this.setState({ nodes: this.props.nodes });
+  };
+
+  getRootNodes = (): Map<string, GraphNode> => {
+    // return root words that dont have parents that are not in the current nodes
+    return new Map(
+      Array.from(this.state.nodes.values())
+        .filter((node) => {
+          return node.isRootInCollection(this.state.nodes);
+        })
+        .map((node) => [node.id, node])
     );
   };
 
@@ -39,6 +58,8 @@ export default class NodeListComponent extends React.Component<
         currentNode={node}
         graphApp={this.props.graphApp}
         graphExplorer={this.props.graphExplorer}
+        deleteNode={this.deleteNode}
+        removeFromList={this.props.removeFromList}
       />
     );
   };

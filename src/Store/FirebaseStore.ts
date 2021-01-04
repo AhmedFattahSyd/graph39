@@ -8,12 +8,8 @@ import "firebase/firebase-firestore";
 import FirebaseUser from "../Auth/FirebaseUser";
 import GraphNode from "../Core/GraphNode";
 import FirebaseNode, { FirebaseNodeData } from "./FirebaseNode";
-// import GraphExplorer from "../GraphExplorer/GraphExplorer";
-// import Graph from "../Core/Graph";
 import { FirebaseGraphData } from "./FirebaseGraph";
 import GraphEdge from "../Core/GraphEdge";
-import PersistentEdge from "./PersistentEdge";
-// import PersistentGraph from "./PersistentGraph";
 
 export default class FirebaseStore extends GraphStore {
   private _db: firebase.firestore.Firestore | null = null;
@@ -22,15 +18,6 @@ export default class FirebaseStore extends GraphStore {
   readonly NodeCollectionName = "nodes";
   readonly EdgeCollectionName = "edges";
   readonly GraphCollectionName = "graphs";
-
-  // private graphExporer: GraphExplorer;
-  // private currentGraph: Graph;
-
-  // constructor(user: User) {
-  //   super(user);
-  //   // this.graphExporer = graphExplorer;
-  //   // this.currentGraph = graph;
-  // }
 
   init = async () => {
     this._authUser = (this._user as FirebaseUser).authUser;
@@ -52,7 +39,7 @@ export default class FirebaseStore extends GraphStore {
     } else {
       // console.log("FirebaseStore: checkUser..: User does not exists");
       await this.createUser();
-      await this.createCurrentGraph();
+      await this.createNewGraph();
     }
   };
 
@@ -60,8 +47,9 @@ export default class FirebaseStore extends GraphStore {
     try {
       await this.loadCurrentGraph();
       await this.loadNodes();
+      this._persistentGraph.graphUpdated()
       await this.loadEdges();
-      // await this.graphExporer.storeUpdated();
+      this._persistentGraph.initialDataLoadInProgress=false
       await this._persistentGraph.graphUpdated();
     } catch (error) {
       throw error;
@@ -78,21 +66,13 @@ export default class FirebaseStore extends GraphStore {
         .collection(this.NodeCollectionName)
         .get();
       if (docRef !== undefined) {
-        // console.log(
-        //   "FirebaseStore: loadNodes: docRef:",
-        //   docRef,
-        //   "graph id",
-        //   this._persistentGraph.graph.id
-        // );
         docRef.forEach(async (doc) => {
           const docData = doc.data();
-          // console.log("FirebaseStore: loadNodes: doc data:", docData);
           await this._persistentGraph.addToNodes(
             doc.id,
             docData as FirebaseNodeData
           );
         });
-        // console.log("FirebaseStore: loadNodes: nodes:", this.graph.nodes);
       }
     } catch (error) {
       throw error;
@@ -124,7 +104,7 @@ export default class FirebaseStore extends GraphStore {
     }
   };
 
-  deleteEdge = async (edge: GraphEdge) => {
+  deleteEdge = async (edgeId: string) => {
     try {
       await this._db
         ?.collection(this.UserCollectionName)
@@ -132,7 +112,7 @@ export default class FirebaseStore extends GraphStore {
         .collection(this.GraphCollectionName)
         .doc(this._persistentGraph.graph.id)
         .collection(this.EdgeCollectionName)
-        .doc(edge.id)
+        .doc(edgeId)
         .delete();
     } catch (error) {
       throw error;
@@ -176,37 +156,17 @@ export default class FirebaseStore extends GraphStore {
   };
 
   setCurrentGraph = (id: string, data: FirebaseGraphData) => {
-    // console.log("setCurrentGraph: loaded graph:", data.name);
     // load the graph that matched the current graph
     if (data.name === this._persistentGraph.graph.name) {
-      // console.log("setCurrentGraph: graph has been set");
       this._persistentGraph.graph.id = id;
     }
   };
 
-  // addToNodes = async (id: string, data: FirebaseNodeData) => {
-  //   const newNode = FirebaseNode.fromData(id, data);
-  //   this.currentGraph.nodes.set(id, newNode);
-  // };
-
-  // addToEdges = async (id: string, data: FirebaseEdgeData) => {
-  //   try {
-  //     const newEdge = FirebaseEdge.fromData(id, data, this.currentGraph);
-  //     if (newEdge !== undefined) {
-  //       this.currentGraph.addEdge(newEdge);
-  //     } else {
-  //       throw new Error(
-  //         `FirebaseStore: addToEdges: cannot create edge with id:${id}`
-  //       );
-  //     }
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // };
-
   createNewNode = async (node: GraphNode) => {
+    // console.log("FirebaseStore: createNewNode: node:",node)
     const storedNode = new FirebaseNode(node);
     const nodeData = storedNode.getData();
+    // console.log("FirebaseStore: createNewNode: nodeData:",nodeData)
     if (this._db !== null) {
       await this._db
         .collection(this.UserCollectionName)
@@ -223,8 +183,8 @@ export default class FirebaseStore extends GraphStore {
   };
 
   createNewEdge = async (edge: GraphEdge) => {
-    const storedEdge: PersistentEdge = new FirebaseEdge(edge);
-    const edgeData = storedEdge.getData();
+    const firebaseEdge = new FirebaseEdge(edge);
+    const edgeData = firebaseEdge.getData();
     if (this._db !== null) {
       await this._db
         .collection(this.UserCollectionName)
@@ -255,7 +215,7 @@ export default class FirebaseStore extends GraphStore {
     }
   };
 
-  createCurrentGraph = async () => {
+  createNewGraph = async () => {
     if (this._db !== null) {
       // const storedGraph = new FirebaseGraph(this.currentGraph);
       await this._db
@@ -269,9 +229,24 @@ export default class FirebaseStore extends GraphStore {
     }
   };
 
+  updateGraph = async () => {
+    if (this._db !== null) {
+      await this._db
+        .collection(this.UserCollectionName)
+        .doc(this._authUser?.uid)
+        .collection(this.GraphCollectionName)
+        .doc(this._persistentGraph.graph.id)
+        .set(this._persistentGraph.getData());
+    } else {
+      throw new Error("FirebaseStore: db is null");
+    }
+  };
+
   updateNode = async (node: GraphNode) => {
     try {
-      const nodeData = node.getNodeData();
+      const storedNode = new FirebaseNode(node);
+      const nodeData = storedNode.getData();
+      nodeData.updatedAt = firebase.firestore.Timestamp.fromDate(new Date());
       if (this._db !== null) {
         await this._db
           .collection(this.UserCollectionName)

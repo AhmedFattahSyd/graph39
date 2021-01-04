@@ -1,22 +1,26 @@
-import { Typography, Card } from "@material-ui/core";
 import React from "react";
-import Panel from "./Panel";
-import Theme from "../GraphTheme";
 import GraphNode from "../Core/GraphNode";
 import GraphApp from "../GraphApp";
 import GraphExplorer from "../GraphExplorer/GraphExplorer";
+import Panel from "./Panel";
+import Theme from "../GraphTheme";
+import { Card, Typography } from "@material-ui/core";
 import NodeListComponent from "./NodeListComponent";
 
 interface IProps {
   currentNode: GraphNode;
   graphApp: GraphApp;
   graphExplorer: GraphExplorer;
+  nodeDataChanged: () => void;
 }
 
-const EntriesTaggedComponent: React.FC<IProps> = (props: IProps) => {
-  //   const [currentNode, setCurrentState] = useState(props.currentNode);
-
+const SimilarNodesPanel: React.FC<IProps> = (props: IProps) => {
+  
   const renderLabel = () => {
+    const similarNodes = props.graphExplorer.mainGraph.getFilteredNodesFuzzy(
+      props.currentNode.name,
+      props.currentNode,
+    );
     return (
       <div style={{ display: "flex", justifyContent: "center" }}>
         <Typography
@@ -26,50 +30,37 @@ const EntriesTaggedComponent: React.FC<IProps> = (props: IProps) => {
             color: Theme.palette.primary.dark,
           }}
         >
-          {"Tagged entries (" +
-            props.currentNode.taggedNodes.size +
-            ")"}
+          {"Similar nodes :" + similarNodes.length}
         </Typography>
       </div>
     );
   };
 
-  const renderExistingEntries = () => {
+  const renderDetails = () => {
+    const similarNodes = new Map(
+      props.graphExplorer.mainGraph
+        .getFilteredNodesFuzzy(props.currentNode.name,props.currentNode)
+        .map((node) => [node.id, node])
+    );
     return (
-      <div
+      <Card
         style={{
           backgroundColor: Theme.palette.primary.light,
           margin: 5,
-          padding: 5,
         }}
       >
         <NodeListComponent
           graphApp={props.graphApp}
           graphExplorer={props.graphExplorer}
-          nodes={props.currentNode.taggedNodes}
+          nodes={similarNodes}
+          removeFromList={handelRemoveFromList}
         />
-      </div>
-    );
-  };
-
-  const renderDetails = () => {
-    return (
-      <Card
-        elevation={1}
-        style={{
-          margin: 5,
-          backgroundColor: Theme.palette.primary.main,
-        }}
-      >
-        <Card
-          elevation={1}
-          style={{ textAlign: "left", margin: 0, padding: 5 }}
-        >
-          {renderExistingEntries()}
-        </Card>
       </Card>
     );
   };
+
+  const handelRemoveFromList = () => {};
+
   return (
     <div>
       <Panel
@@ -77,8 +68,10 @@ const EntriesTaggedComponent: React.FC<IProps> = (props: IProps) => {
         renderLabelFun={renderLabel}
         renderDetailsFun={renderDetails}
         initialStateOpen={false}
+        showLabel={true}
       />
     </div>
   );
 };
-export default EntriesTaggedComponent;
+
+export default SimilarNodesPanel;

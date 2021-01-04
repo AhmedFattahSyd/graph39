@@ -1,5 +1,12 @@
 import Graph from "../Core/Graph";
-import GraphEdge, { GraphEdgeData } from "../Core/GraphEdge";
+import GraphEdge from "../Core/GraphEdge";
+import { GraphEdgeType } from "../Core/GraphEdgeType";
+
+export interface PersistentEdgeData {
+  edgeType: GraphEdgeType;
+  node1Id: string;
+  node2Id: string;
+}
 
 export default class PersistentEdge {
   private _edge: GraphEdge;
@@ -14,26 +21,28 @@ export default class PersistentEdge {
     this._edge = edge;
   }
 
-    getData = (): GraphEdgeData => {
-      const data: GraphEdgeData = {
-        edgeType: this.edge.edgeType,
-        node1Id: this.edge.node1.id,
-        node2Id: this.edge.node2.id,
-      };
-      return data;
+  getData = (): PersistentEdgeData => {
+    const data: PersistentEdgeData = {
+      edgeType: this.edge.edgeType,
+      node1Id: this.edge.node1.id,
+      node2Id: this.edge.node2.id,
     };
-  
-    static fromData = (
-      id: string,
-      data: GraphEdgeData,
-      graph: Graph
-    ): GraphEdge | undefined => {
-      let edge: GraphEdge | undefined = undefined;
-      const node1 = graph.getNodeById(data.node1Id);
+    return data;
+  };
+
+  static fromData = (
+    id: string,
+    data: PersistentEdgeData,
+    graph: Graph
+  ): GraphEdge | undefined => {
+    let edge: GraphEdge | undefined = undefined;
+    const node1 = graph.getNodeById(data.node1Id);
+    if (node1 !== undefined) {
       const node2 = graph.getNodeById(data.node2Id);
-      if (node1 !== undefined && node2 !== undefined) {
+      if (node2 !== undefined) {
         edge = new GraphEdge(data.edgeType, node1, node2, id);
       }
-      return edge;
-    };
+    }
+    return edge;
+  };
 }

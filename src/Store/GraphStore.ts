@@ -21,7 +21,7 @@ export default class GraphStore {
 
   deleteNode = async (node: GraphNode) => {}
 
-  deleteEdge = async (tagEdge: GraphEdge) => {};
+  deleteEdge = async (edgeId: string) => {};
 
   createNewEdge = async (edge: GraphEdge) => {};
 
@@ -33,5 +33,7 @@ export default class GraphStore {
 
   updateNode = (node: GraphNode) => {};
 
-  createNewNode = async (node: GraphNode) => {};
+  createNewNode = async (node: GraphNode) => {
+    console.log("GraphStore: createNewNode: node:",node)
+  };
 }

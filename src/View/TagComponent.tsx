@@ -18,7 +18,7 @@ interface TagComponentProps {
   currentNode: GraphNode;
   graphApp: GraphApp;
   graphExplorer: GraphExplorer;
-  tagsHaveChanged: ()=>void
+  tagsHaveChanged: () => void;
 }
 interface TagComponentState {
   currentNode: GraphNode;
@@ -53,17 +53,25 @@ export default class TagComponent extends React.Component<
         <Card
           key={this.state.currentNode.id}
           elevation={1}
-          style={{ textAlign: "left", margin: 5, padding: 0 }}
+          style={{ textAlign: "left", margin: 0, padding: 0 }}
         >
           <TextField
             id="tag"
             label="Add or search for tags"
             value={this.state.tagSearchText}
             margin="normal"
-            style={{ marginLeft: 10, width: "50%", fontSize: 12 }}
+            style={{
+              marginLeft: 10,
+              marginRight: 5,
+              width: "95%",
+              fontSize: 10,
+              marginTop: 0,
+              marginBottom: 5,
+            }}
             onChange={this.handleTagSearchTextChange}
             autoComplete="off"
           />
+          {/* </div> */}
           {this.renderMatchedTagList()}
           {this.renderExistingTags()}
         </Card>
@@ -89,8 +97,11 @@ export default class TagComponent extends React.Component<
 
   setMatchedTags = (searchText: string) => {
     this.setState({
-      matchedTags: this.props.graphExplorer.mainGraph.getFilteredTags(
+      matchedTags: this.props.graphExplorer.mainGraph.getFilteredNodesExact(
         searchText,
+        true,
+        false,
+        false
       ),
     });
   };
@@ -106,11 +117,13 @@ export default class TagComponent extends React.Component<
             onDelete={(event) => this.handleRemoveTag(event, node)}
             onClick={(event) => this.handleTagClicked(event, node)}
             variant="outlined"
+            size="small"
             style={{
               margin: "5px",
               // color: MpgTheme.palette.primary.dark,
               // backgroundColor: MpgTheme.palette.primary.contrastText,
               fontWeight: "bold",
+              fontSize:"9px",
             }}
           />
         ))}
@@ -130,7 +143,7 @@ export default class TagComponent extends React.Component<
         existingTags: currentNode.tags,
         numberOfTags: currentNode.tags.size,
       });
-      this.props.tagsHaveChanged()
+      this.props.tagsHaveChanged();
     } catch (error) {
       throw error;
     }
@@ -198,7 +211,7 @@ export default class TagComponent extends React.Component<
         tagSearchText: "",
         tagListVisible: false,
       });
-      this.props.tagsHaveChanged()
+      this.props.tagsHaveChanged();
     } catch (error) {
       throw error;
     }

@@ -22,12 +22,20 @@ export default class GraphRoot {
   public set name(value: string) {
     this._name = value;
   }
-  private _updateAt: Date = new Date()
+  protected _updatedAt: Date = new Date()
   public get updatedAt(): Date {
-    return this._updateAt;
+    return this._updatedAt;
   }
   public set updatedAt(value: Date) {
-    this._updateAt = value;
+    this._updatedAt = value;
+  }
+
+  protected _createdAt: Date = new Date()
+  public get createdAt(): Date {
+    return this._createdAt;
+  }
+  public set createdAt(value: Date) {
+    this._createdAt = value;
   }
 
   constructor(name: string = "No name", id: string = "") {

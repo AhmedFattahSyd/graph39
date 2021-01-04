@@ -2,6 +2,15 @@
 // represent an authenticated user
 
 export default class User {
+
+  private _userId: string | undefined = undefined;
+  public get userId(): string | undefined {
+    return this._userId;
+  }
+  public set userId(value: string | undefined) {
+    this._userId = value;
+  }
+
   protected _signedOn: boolean = false;
   public get signedOn(): boolean {
     return this._signedOn;

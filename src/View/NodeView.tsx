@@ -7,15 +7,21 @@ import {
 } from "@material-ui/core";
 import React from "react";
 import GraphApp from "../GraphApp";
-import GraphNode from "../Core/GraphNode";
+import GraphNode, { GraphNodePrivacy } from "../Core/GraphNode";
 import GraphExplorer from "../GraphExplorer/GraphExplorer";
 import GraphTheme from "../GraphTheme";
-import NamePanel from "./NamePanel";
+import KeyInfoPanel from "./KeyInfoPanel";
 import SkeletonView from "./SkeletonView";
 import ViewableItem from "./ViewableItem";
 import TagPanel from "./TagPanel";
 import EntriesWithTagsPanel from "./EntriesWithTagsPanel";
-import EntriesTaggedComponent from "./EntriesTaggedComponent";
+import TaggedEntriesComponent from "./TaggedEntriesComponent";
+import StatePanel from "./StatePanel";
+import ParentChildPanel from "./ParentChildPanel";
+import PriorityPanel from "./PriorityPanel";
+import SimilarNodesPanel from "./SimilarNodesPanel";
+import DatesPanel from "./DatesPanel";
+import PrivacyPanel from "./PrivacyPanel";
 
 interface NodeViewProps {
   viewableItem: ViewableItem;
@@ -60,8 +66,20 @@ export default class NodeView extends React.Component<
             display: "flex",
             alignContent: "center",
             alignItems: "center",
+            justifyContent: "center",
+            justifyItems: "center",
           }}
         >
+          <Typography
+            variant="h6"
+            style={{
+              fontWeight: "bold",
+              color: GraphTheme.palette.primary.contrastText,
+            }}
+          >
+            {this.getHeadlineMasked()}
+          </Typography>
+          <div style={{ width: "5px" }} />
           <Typography
             variant="button"
             style={{
@@ -73,43 +91,118 @@ export default class NodeView extends React.Component<
             {this.state.currentNode.tagFlag ? "TAG" : ""}
           </Typography>
           <div style={{ width: "5px" }} />
-          <Typography
-            variant="h6"
-            style={{
-              fontWeight: "bold",
-              color: GraphTheme.palette.primary.contrastText,
-            }}
-          >
-            {this.state.currentNode.shortName}
-          </Typography>
+          {this.state.currentNode.starred ? (
+            <Icon
+              style={{
+                fontSize: "14px",
+                color: GraphTheme.palette.primary.contrastText,
+              }}
+            >
+              star
+            </Icon>
+          ) : (
+            <div></div>
+          )}
         </div>
         {this.renderRightIcon()}
       </div>
     );
   };
 
+  getHeadlineMasked = (): string => {
+    if (
+      this.props.graphApp.privateMode &&
+      this.state.currentNode.privacy === GraphNodePrivacy.Private
+    ) {
+      return "***********************";
+    } else {
+      return this.props.currentNode.shortName;
+    }
+  };
+
   renderBody = () => {
     return (
       <div>
-        <NamePanel
+        <KeyInfoPanel
           currentNode={this.state.currentNode}
           nodeDataChanged={this.nodeDataChanged}
+          graphExplorer={this.props.graphExplorer}
+          graphApp={this.props.graphApp}
         />
-        <TagPanel
+        {this.state.currentNode.tagFlag ? (
+          <div>
+            <TaggedEntriesComponent
+              currentNode={this.state.currentNode}
+              graphApp={this.props.graphApp}
+              graphExplorer={this.props.graphExplorer}
+            />
+          </div>
+        ) : (
+          <div>
+            {" "}
+            <TagPanel
+              currentNode={this.state.currentNode}
+              nodeDataChanged={this.nodeDataChanged}
+              graphApp={this.props.graphApp}
+              graphExplorer={this.props.graphExplorer}
+            />
+            <EntriesWithTagsPanel
+              currentNode={this.state.currentNode}
+              graphApp={this.props.graphApp}
+              graphExplorer={this.props.graphExplorer}
+            />
+          </div>
+        )}
+        {/* {this.state.currentNode.tagFlag ? (
+          <TaggedEntriesComponent
+            currentNode={this.state.currentNode}
+            graphApp={this.props.graphApp}
+            graphExplorer={this.props.graphExplorer}
+          />
+        ) : (
+          <div></div>
+        )} */}
+        <StatePanel
+          currentNode={this.state.currentNode}
+          graphApp={this.props.graphApp}
+          graphExplorer={this.props.graphExplorer}
+          showLabel={true}
+        />
+        <ParentChildPanel
+          currentNode={this.state.currentNode}
+          graphApp={this.props.graphApp}
+          graphExplorer={this.props.graphExplorer}
+          parentPanel={true}
+          refreshNode={this.refreshNode}
+        />
+        <ParentChildPanel
+          currentNode={this.state.currentNode}
+          graphApp={this.props.graphApp}
+          graphExplorer={this.props.graphExplorer}
+          parentPanel={false}
+          refreshNode={this.refreshNode}
+        />
+        <PriorityPanel
           currentNode={this.state.currentNode}
           nodeDataChanged={this.nodeDataChanged}
-          graphApp={this.props.graphApp}
           graphExplorer={this.props.graphExplorer}
+          graphApp={this.props.graphApp}
         />
-        <EntriesWithTagsPanel
+        <SimilarNodesPanel
           currentNode={this.state.currentNode}
-          graphApp={this.props.graphApp}
+          nodeDataChanged={this.nodeDataChanged}
           graphExplorer={this.props.graphExplorer}
+          graphApp={this.props.graphApp}
         />
-        <EntriesTaggedComponent
+        <DatesPanel
           currentNode={this.state.currentNode}
-          graphApp={this.props.graphApp}
           graphExplorer={this.props.graphExplorer}
+          graphApp={this.props.graphApp}
+        />
+        <PrivacyPanel
+          currentNode={this.state.currentNode}
+          graphExplorer={this.props.graphExplorer}
+          graphApp={this.props.graphApp}
         />
       </div>
     );
@@ -160,7 +253,6 @@ export default class NodeView extends React.Component<
   };
 
   handleDelete = async () => {
-    console.log("handleDelete");
     await this.props.graphExplorer.deleteNode(this.state.currentNode);
     this.props.graphApp.closeView(this.props.viewableItem);
   };
@@ -175,7 +267,8 @@ export default class NodeView extends React.Component<
     // node.name = newName;
     await this.setState({ itemDataChanged: true, currentNode: node });
     await this.updateCurrentNode();
-    this.props.graphApp.refreshOpenItems()
+    await this.updateGraph();
+    this.props.graphApp.refreshOpenItems();
   };
 
   static getDerivedStateFromProps = (
@@ -191,6 +284,7 @@ export default class NodeView extends React.Component<
 
   updateCurrentNode = async () => {
     try {
+      // this.props.graphApp.appendLog("Hello from NodeView")
       if (this.state.itemDataChanged) {
         const node = this.state.currentNode;
         await this.props.graphExplorer.updateNode(node);
@@ -206,6 +300,15 @@ export default class NodeView extends React.Component<
     }
   };
 
+  refreshNode = () => {
+    const node = this.state.currentNode;
+    this.setState({
+      currentNode: node,
+    });
+  };
+
+  updateGraph = () => {};
+
   renderLeftIcon = () => {
     let saveIconColor = this.state.itemDataChanged
       ? GraphTheme.palette.secondary.light
@@ -215,7 +318,7 @@ export default class NodeView extends React.Component<
         {!this.state.dataSavingInProgress ? (
           <Tooltip title={"Close"}>
             <Icon
-              //   onClick={() => this.handleClose()}
+              onClick={() => this.handleClose()}
               style={{ fontSize: "18px", color: saveIconColor }}
             >
               close
@@ -237,7 +340,7 @@ export default class NodeView extends React.Component<
         {!this.state.dataSavingInProgress ? (
           <Tooltip title={"Save"}>
             <Icon
-              //   onClick={() => this.props.updateItem}
+                onClick={() => this.updateCurrentNode}
               style={{ fontSize: "18px", color: saveIconColor }}
             >
               save
@@ -265,11 +368,11 @@ export default class NodeView extends React.Component<
     return this.renderClose();
     // return this.state.itemDataChanged
     //   ? this.renderSaveAndClose()
-      // : this.renderClose();
+    // : this.renderClose();
   };
 
   handleClose = () => {
-    console.log("handleClose");
+    // console.log("handleClose");
     if (!this.state.itemDataChanged) {
       this.props.graphApp.closeView(this.props.viewableItem);
     } else {

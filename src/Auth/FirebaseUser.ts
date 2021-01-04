@@ -23,14 +23,10 @@ export default class FirebaseUser extends User {
       this._auth = firebase.auth();
       await firebase.firestore().enablePersistence();
       await this._auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-      // console.log("FirebaseUser: init(): auth:", this._auth);
       if (this.auth !== null) {
         if (this._auth.currentUser !== null) {
           this.setUserSignedOn(this._auth.currentUser);
-          // console.log(
-          //   "FirebaseUser: init(): currentUser:",
-          //   this._auth.currentUser
-          // );
+          this.userId = this._auth.currentUser.uid;
         } else {
           throw new Error(`FirebaseUser: init: auth.currentUser is null`);
         }

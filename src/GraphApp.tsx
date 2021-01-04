@@ -23,7 +23,9 @@ import Snackbar from "@material-ui/core/Snackbar/Snackbar";
 import NodeView from "./View/NodeView";
 import ViewableItem from "./View/ViewableItem";
 import { ViewableItemClass } from "./View/ViewableItemClass";
-import SearchView from "./View/SearchView";
+import GraphView from "./View/GraphView";
+import LogView from "./View/LogView";
+import ImportDataView from "./View/ImportDataView";
 
 interface AppProps {}
 
@@ -41,6 +43,13 @@ interface AppState {
   messageType: MessageType;
   mainGraph: Graph;
   dataLoading: boolean;
+  logText: string;
+  error: Error | null;
+  filteredStarredNodes: Map<string, GraphNode>;
+  filteredTags: Map<string, GraphNode>;
+  filteredContexts: Map<string, GraphNode>;
+  filteredEntries: Map<string, GraphNode>;
+  searchText: string;
 }
 
 enum MessageType {
@@ -56,6 +65,8 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
   readonly maxViewWidth = 410;
   private startTime: number = new Date().getTime();
   private _viewWidth: number = this.maxViewWidth;
+  private _logView: ViewableItem | null = null;
+  private _importDataView: ViewableItem | null = null;
   public get viewWidth(): number {
     return this._viewWidth;
   }
@@ -63,12 +74,25 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
   public get viewMargin(): number {
     return this._viewMargin;
   }
+  private _privateMode = true;
+  public get privateMode() {
+    return this._privateMode;
+  }
+  public set privateMode(value) {
+    this._privateMode = value;
+  }
+  // private filteredStarredNodes: Map<string, GraphNode> = new Map();
+  // private filteredTags: Map<string, GraphNode> = new Map();
+  // private filteredContexts: Map<string, GraphNode> = new Map();
+  // private filteredEntries: Map<string, GraphNode> = new Map();
+  // private searchText = "";
 
   constructor(props: AppProps) {
     super(props);
     this.graphExplorer = new Explorer(this.refreshData);
     this.state = {
-      initialLoadInProgress: false,
+      initialLoadInProgress: true,
+      dataLoading: true,
       dataSavingInprogress: false,
       sidebarVisible: false,
       userSignedOn: false,
@@ -81,13 +105,61 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
       messageWaitTime: 6000,
       message: "No message",
       mainGraph: this.graphExplorer.mainGraph,
-      dataLoading: true,
+      logText: "App has started",
+      error: null,
+      filteredStarredNodes: new Map(),
+      filteredTags: new Map(),
+      filteredContexts: new Map(),
+      filteredEntries: new Map(),
+      searchText: "",
     };
   }
 
-  createNewEntry = async () => {
+  setFilteredNodes = () => {
+    this.setState({
+      filteredStarredNodes: this.graphExplorer.mainGraph.getFilteredNodesExact(
+        this.state.searchText,
+        false,
+        false,
+        true
+      ),
+      filteredContexts: this.graphExplorer.mainGraph.getFilteredNodesExact(
+        this.state.searchText,
+        false,
+        true,
+        false
+      ),
+      filteredTags: this.graphExplorer.mainGraph.getFilteredNodesExact(
+        this.state.searchText,
+        true,
+        false,
+        false
+      ),
+      filteredEntries: this.graphExplorer.mainGraph.getFilteredNodesExact(
+        this.state.searchText,
+        false,
+        false,
+        false
+      ),
+    });
+  };
+
+  setSearchText = async (text: string) => {
+    await this.setState({ searchText: text });
+    await this.setFilteredNodes();
+  };
+
+  createNewNode = async (
+    headline = "New entry",
+    tagFlag = false,
+    contextFlag = false,
+    starred = false
+  ) => {
     const newNode = await this.graphExplorer.createNewNode(
-      "New entry"
+      headline,
+      tagFlag,
+      contextFlag,
+      starred
     );
     if (newNode !== null) {
       const viewableItem = new ViewableItem(ViewableItemClass.Node, newNode);
@@ -97,6 +169,22 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     } else {
       this.showMessage("New node could not be created", MessageType.Error);
     }
+  };
+
+  createNewEntry = async () => {
+    this.createNewNode();
+  };
+
+  createNewStarredNode = async () => {
+    this.createNewNode("New node", false, false, true);
+  };
+
+  createNewTag = async () => {
+    this.createNewNode("New tag", true);
+  };
+
+  createNewContext = async () => {
+    this.createNewNode("New context", false, true);
   };
 
   openNode = (node: GraphNode) => {
@@ -210,13 +298,44 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
       case ViewableItemClass.Search:
         const graph = item.object as Graph;
         return (
-          <SearchView
+          <GraphView
             viewableItem={item}
             currentGraph={graph}
             graphApp={this}
             graphExplorer={this.graphExplorer}
+            filteredStarredNodes={this.state.filteredStarredNodes}
+            filteredTags={this.state.filteredTags}
+            filteredContexts={this.state.filteredContexts}
+            filteredEntries={this.state.filteredEntries}
+            setSearchText={this.setSearchText}
           />
         );
+
+      case ViewableItemClass.Log:
+        return (
+          <LogView
+            viewableItem={item}
+            currentGraph={this.state.mainGraph}
+            graphApp={this}
+            graphExplorer={this.graphExplorer}
+            logText={this.state.logText}
+          />
+        );
+
+      case ViewableItemClass.Import:
+        return (
+          <ImportDataView
+            viewableItem={item}
+            graphApp={this}
+            graphExplorer={this.graphExplorer}
+          />
+        );
+
+      // default:
+      //   this.showMessage(
+      //     `Invalid ViewableItemClass type: ${item.class}`,
+      //     MessageType.Error
+      //   );
     }
   };
 
@@ -227,7 +346,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     // this.refreshAllOpenViews();
   };
 
-  private showMessage = (
+  public showMessage = (
     message: string,
     messageType: MessageType = MessageType.Information,
     messageWaitTime: number = 7000
@@ -272,6 +391,12 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
           <ListItem button onClick={this.createNewEntry}>
             <ListItemText primary="New entry" />
           </ListItem>
+          <ListItem button onClick={this.createNewTag}>
+            <ListItemText primary="New tag" />
+          </ListItem>
+          <ListItem button onClick={this.createNewContext}>
+            <ListItemText primary="New context" />
+          </ListItem>
           <Divider />
           <ListItem button onClick={this.openSearchView}>
             <ListItemText primary="Search graph" />
@@ -284,10 +409,47 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
             <ListItemText primary="Sign off" />
           </ListItem>
           <Divider />
+          <ListItem button onClick={this.openImportDataView}>
+            <ListItemText primary="Import data" />
+          </ListItem>
+          <ListItem button onClick={this.exportData}>
+            <ListItemText primary="Export data" />
+          </ListItem>
+          <ListItem button onClick={this.openLogView}>
+            <ListItemText primary="Log" />
+          </ListItem>
+          <Divider />
+          <ListItem button onClick={this.setPrivateModeOn}>
+            <ListItemText primary="Hide private items" />
+          </ListItem>
+          <ListItem button onClick={this.setPrivateModeOff}>
+            <ListItemText primary="Show private items" />
+          </ListItem>
+          <Divider />
+          <ListItem button onClick={this.showAppVersion}>
+            <ListItemText primary="Show app version" />
+          </ListItem>
         </List>
         <Divider />
       </div>
     );
+  };
+
+  private showAppVersion =()=>{
+    this.showMessage(this.appVersion)
+  }
+
+  private exportData = async () => {
+    await this.graphExplorer.exportData();
+    this.showMessage("Data has been exported");
+  };
+
+  setPrivateModeOn = () => {
+    this._privateMode = true;
+  };
+
+  setPrivateModeOff = () => {
+    this._privateMode = false;
   };
 
   signOff = async () => {
@@ -297,44 +459,60 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
   refreshData = async (
     userSignedOn: boolean,
     userName: string | null,
-    mainGraph: Graph
+    mainGraph: Graph,
+    error: Error | null,
+    initialDataLoadInProgress: boolean
   ) => {
     // console.log("App: user signedOn:", userSignedOn, "name:", userName);
     await this.setState({
       userSignedOn: userSignedOn,
       userName: userName,
       nodes: mainGraph.nodes,
+      error: error,
+      initialLoadInProgress: initialDataLoadInProgress,
     });
+    await this.setFilteredNodes();
+    this.refreshOpenItems();
+    if (error !== null) {
+      this.showMessage(error.message, MessageType.Error);
+      this.appendLog(error.message);
+      this.openLogView();
+    }
+    const dataLoadingTime = Math.floor(
+      (new Date().getTime() - this.startTime) / 1000
+    );
     if (this.state.dataLoading) {
       if (!this.state.initialLoadInProgress) {
         await this.setState({ dataLoading: false });
-        const dataLoadingTime = Math.floor(
-          (new Date().getTime() - this.startTime) / 1000
-        );
+
         this.showMessage(
           `Data has been loaded. Elapsed time: ${dataLoadingTime} sec.
-           nodes: ${this.state.mainGraph.nodes.size}`,
+           items: ${this.state.mainGraph.nodes.size}
+           relations: ${this.state.mainGraph.edges.size}`,
           MessageType.Information,
           60000
         );
+        this.setState({ dataLoading: false });
         this.openSearchView();
       } else {
-        // initial load is still in progress
-        // this.showMessage(
-        //   `Loading data ... items loaded: ${this.state.itemsLoaded}`,
-        //   MpgMessageType.Information,
-        //   60000
-        // );
+        //initial load is still in progress
+        this.showMessage(
+          `Loading data ... Elapsed time: ${dataLoadingTime} sec.
+          items: ${this.state.mainGraph.nodes.size}
+          relations: ${this.state.mainGraph.edges.size}`,
+          MessageType.Information,
+          60000
+        );
       }
     } else {
       // do nothing
     }
   };
 
-  refreshOpenItems = ()=>{
-    const openItems = this.state.openViewableItems
-    this.setState({openViewableItems: openItems})
-  }
+  refreshOpenItems = () => {
+    const openItems = this.state.openViewableItems;
+    this.setState({ openViewableItems: openItems });
+  };
 
   toggleDrawer = (open: boolean) => () => {
     this.setState({
@@ -346,7 +524,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     try {
       this.updateSize();
       this.showMessage(
-        "App has started. Version: " + this.appVersion,
+        "App has started." + this.appVersion,
         MessageType.Information,
         12000
       );
@@ -377,6 +555,10 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     // console.log("displayWidth:", this.displayWidth);
   };
 
+  appendLog = (text: string) => {
+    this.setState({ logText: this.state.logText + "\n" + text });
+  };
+
   openSearchView = () => {
     const searchViewableItem = new ViewableItem(
       ViewableItemClass.Search,
@@ -384,6 +566,26 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     );
     const openViewableItems = this.state.openViewableItems;
     openViewableItems.set(searchViewableItem.id, searchViewableItem);
+    this.setState({ openViewableItems: openViewableItems });
+  };
+
+  openLogView = () => {
+    if (this._logView === null) {
+      this._logView = new ViewableItem(ViewableItemClass.Log, null);
+    }
+    const openViewableItems = this.state.openViewableItems;
+    // openViewableItems.set(logViewableItem.id, logViewableItem);
+    openViewableItems.set(this._logView.id, this._logView);
+    this.setState({ openViewableItems: openViewableItems });
+  };
+
+  openImportDataView = () => {
+    if (this._importDataView === null) {
+      this._importDataView = new ViewableItem(ViewableItemClass.Import, null);
+    }
+    const openViewableItems = this.state.openViewableItems;
+    // openViewableItems.set(logViewableItem.id, logViewableItem);
+    openViewableItems.set(this._importDataView.id, this._importDataView);
     this.setState({ openViewableItems: openViewableItems });
   };
 
@@ -413,22 +615,48 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
                 </Icon>
               )}
             </div>
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <Typography variant="body1">
-                {this.getCurrentUserName() + "  "}
-              </Typography>
-              <div style={{ width: "10px" }}></div>
-              <Typography variant="h5" style={{ fontWeight: "bold" }}>
-                My Graph
-              </Typography>
-              <div style={{ width: "10px" }}></div>
-              <Typography variant="body1">
-                {"  " + this.state.nodes.size + " items"}
-              </Typography>
-              {/* <div style={{width:3}}></div>
-              <Typography variant="body1">
-                {"  " + this.state.rels.size + " rels"}
-              </Typography> */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <Typography variant="body1">
+                  {this.getCurrentUserName() + "  "}
+                </Typography>
+                <div style={{ width: "10px" }}></div>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography variant="h5" style={{ fontWeight: "bold" }}>
+                    My Graph
+                  </Typography>
+                  {!this._privateMode ? (
+                    <Typography
+                      variant="body1"
+                      style={{
+                        fontWeight: "bold",
+                        fontSize: "10px",
+                        color: GraphTheme.palette.secondary.light,
+                      }}
+                    >
+                      Private mode
+                    </Typography>
+                  ) : (
+                    <div></div>
+                  )}
+                </div>
+                <div style={{ width: "10px" }}></div>
+                <Typography variant="body1">
+                  {"  " + this.state.nodes.size + " items"}
+                </Typography>
+              </div>
             </div>
             {this.state.initialLoadInProgress ||
             this.state.dataSavingInprogress ? (
@@ -436,7 +664,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
             ) : (
               <Tooltip title="New entry">
                 <Icon style={{ margin: "5px" }} onClick={this.createNewEntry}>
-                  add
+                  add_circle_outline
                 </Icon>
               </Tooltip>
             )}
@@ -450,7 +678,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     let userName = "No user";
     if (this.state.userSignedOn) {
       if (this.state.userName !== null) {
-        userName = this.state.userName;
+        userName = this.state.userName.split(" ")[0];
       }
     }
     return userName;
