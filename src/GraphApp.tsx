@@ -59,7 +59,7 @@ enum MessageType {
 }
 
 export default class GraphApp extends React.Component<AppProps, AppState> {
-  private appVersion = "My Graph - Version: Alpha (0.39.001) - 11 Jan 2021";
+  private appVersion = "My Graph - Version: Alpha (0.39.2) - 11 Jan 2021";
   private maxDisplayWidth = 10000;
   private displayWidth: number = 3000;
   private graphExplorer: Explorer;
@@ -564,6 +564,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
       // this.setState({appErrorState: true, appError: error})
       // throw error
       // this.handleError(error);
+      throw error;
     }
   };
 

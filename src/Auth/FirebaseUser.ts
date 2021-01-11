@@ -19,18 +19,24 @@ export default class FirebaseUser extends User {
   init = async () => {
     // console.log("FirebaseUser: init");
     try {
+      // console.log("FirebaseUser: init ...")
       firebase.initializeApp(FirebaseConfig);
       this._auth = firebase.auth();
       await firebase.firestore().enablePersistence();
       await this._auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+      // console.log("FirebaseUser: init: auth:",this.auth)
       if (this.auth !== null) {
+        // console.log("FirebaseUser: init: auth:",this.auth)
         if (this._auth.currentUser !== null) {
           this.setUserSignedOn(this._auth.currentUser);
           this.userId = this._auth.currentUser.uid;
+          // console.log("FirebaseUser: init: user is set: users",this._auth.currentUser.displayName)
         } else {
-          throw new Error(`FirebaseUser: init: auth.currentUser is null`);
+          // console.log("FirebaseUser: init: auth.currentUser is null")
+          // throw new Error(`FirebaseUser: init: auth.currentUser is null`);
+          this.signOn();
         }
-        this.auth.onAuthStateChanged((authUser) => {
+        this._auth.onAuthStateChanged((authUser) => {
           authUser ? this.setUserSignedOn(authUser) : this.setUserSignedOff();
         });
       } else {
@@ -39,20 +45,25 @@ export default class FirebaseUser extends User {
         );
       }
     } catch (error) {
+      // console.log("FirebaseUser: init: catch()");
       throw error;
     }
   };
 
   signOn = async () => {
-    if (this.auth !== null) {
+    console.log("Firebaseuser: signOn");
+    if (this._auth !== null) {
+      // console.log("Firebaseuser: signOn, ");
       const provider = new firebase.auth.GoogleAuthProvider();
       // we need to add this when we start using GDrive
       // provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
-      await this.auth.signInWithPopup(provider);
+      await this._auth.signInWithPopup(provider);
+      if (this._auth.currentUser !== null) {
+        this.setUserSignedOn(this._auth.currentUser);
+        this.userId = this._auth.currentUser.uid;
+      }
     } else {
-      throw new Error(
-        "MpgGraphData: signinUser: Signing in. Cannot signin: auth is null"
-      );
+      throw new Error("FirebaseUser: Signing in. Cannot signin: auth is null");
     }
   };
 

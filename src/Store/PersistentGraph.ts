@@ -150,15 +150,16 @@ export default class PersistentGraph {
   };
 
   init = async () => {
+    // console.log("PersistentGraph: init")
     const user = this._user;
     if (user !== null) {
       await user.init();
+      // console.log("PersistentGraph: init: back from user.init()")
       if (user.signedOn) {
         // console.log("PersistentGraph: init: user is signedOn")
         await this._store.init();
       } else {
-        // do nothing
-        // wait for the user to signon explicitly
+        // console.log("PersistentGraph: init: this._user is null")
       }
     }
     this.graphUpdated();
