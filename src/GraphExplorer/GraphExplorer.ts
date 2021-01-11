@@ -10,7 +10,7 @@ import FirebaseGraph from "../Store/FirebaseGraph";
 import PersistentGraph from "../Store/PersistentGraph";
 import FirebaseUser from "../Auth/FirebaseUser";
 import ImportDataAgent37 from "../Store/ImportDataAgent37";
-import ExportImportAgentV2 from '../Store/ExportImportAgentV2';
+import ImportExportAgentV2 from '../Store/ImportExportAgentV2';
 
 export default class GraphExplorer {
   private _user: User | null = null;
@@ -71,12 +71,12 @@ export default class GraphExplorer {
   };
 
   public importDataV2 = async (data: string) => {
-    const importAgent = new ExportImportAgentV2(this);
+    const importAgent = new ImportExportAgentV2(this);
     await importAgent.importData(data);
   };
 
   public exportData = async ()=>{
-    const exportImportAgent = new ExportImportAgentV2(this)
+    const exportImportAgent = new ImportExportAgentV2(this)
     await exportImportAgent.exportData()
   }
 
@@ -163,6 +163,7 @@ export default class GraphExplorer {
     name: string,
     tagFlag: boolean = false,
     contextFlag: boolean = false,
+    listFlag=false,
     starred = false
   ): Promise<GraphNode> => {
     // console.log("GraphExplorer: createNewNode")
@@ -170,6 +171,7 @@ export default class GraphExplorer {
       name,
       tagFlag,
       contextFlag,
+      listFlag,
       starred
     );
   };

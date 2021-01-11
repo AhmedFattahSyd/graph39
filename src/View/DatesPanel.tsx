@@ -43,13 +43,10 @@ const DatesPanel: React.FC<IProps> = (props: IProps) => {
         elevation={1}
         style={{
           margin: 5,
-          backgroundColor: Theme.palette.primary.main,
+          backgroundColor: Theme.palette.primary.contrastText,
+          padding:5,
         }}
       >
-        <Card
-          elevation={1}
-          style={{ textAlign: "left", margin: 0, padding: 5 }}
-        >
           <div
             style={{
               display: "flex",
@@ -79,7 +76,6 @@ const DatesPanel: React.FC<IProps> = (props: IProps) => {
               {"Upadted: " + updatedAtDate + " (" + ageFromLastUpdated + ")"}
             </Typography>
           </div>
-        </Card>
       </Card>
     );
   };

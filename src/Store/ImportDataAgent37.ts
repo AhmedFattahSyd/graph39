@@ -54,8 +54,13 @@ export default class ImportDataAgent37 {
       } else {
         if (itemData.state !== MpgItemState.Archived) {
           let tagFlag = false;
+          let listFlag=false
           if (itemData.type === MpgItemType.Tag) {
             tagFlag = true;
+          }else{
+            if(itemData.type===MpgItemType.List){
+              listFlag=true
+            }
           }
           const newState = this.mapState(itemData);
           const node = new GraphNode(
@@ -63,6 +68,7 @@ export default class ImportDataAgent37 {
             itemData.id,
             tagFlag,
             false,
+            listFlag,
             false,
             itemData.notes,
             new Date(itemData.createdAt),

@@ -24,11 +24,9 @@ export default class NodeListComponent extends React.Component<
   }
 
   render = () => {
-    // const rootNodes = this.state.nodes
-    const rootNodes = this.getRootNodes();
     return (
       <div>
-        {Array.from(rootNodes.values()).map((node) =>
+        {this.getRootNodesSorted().map((node) =>
           this.renderNodeComponent(node)
         )}
       </div>
@@ -40,15 +38,13 @@ export default class NodeListComponent extends React.Component<
     this.setState({ nodes: this.props.nodes });
   };
 
-  getRootNodes = (): Map<string, GraphNode> => {
+  getRootNodesSorted = (): GraphNode[] => {
     // return root words that dont have parents that are not in the current nodes
-    return new Map(
-      Array.from(this.state.nodes.values())
-        .filter((node) => {
-          return node.isRootInCollection(this.state.nodes);
-        })
-        .map((node) => [node.id, node])
-    );
+    return Array.from(this.state.nodes.values())
+      .filter((node) => node.isRootInCollection(this.state.nodes))
+      .sort((node1, node2) => {
+        return node2.netPriority - node1.netPriority;
+      });
   };
 
   renderNodeComponent = (node: GraphNode) => {

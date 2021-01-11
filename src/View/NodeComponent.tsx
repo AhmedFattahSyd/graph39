@@ -13,6 +13,7 @@ import GraphExplorer from "../GraphExplorer/GraphExplorer";
 import GraphTheme from "../GraphTheme";
 import NodeListComponent from "./NodeListComponent";
 import ParkNodeComponent from "./ParkNodeComponent";
+import PrivacyPanel from "./PrivacyPanel";
 import TagComponent from "./TagComponent";
 
 interface NodeComponentProps {
@@ -67,17 +68,23 @@ export default class NodeComponent extends React.Component<
             onClick={this.handleCardClicked}
             // onKeyPress={event=> this.handleKeyPressed(event)}
           >
-            <Typography
-              style={{
-                fontSize: "12px",
-                fontWeight: "bold",
-                color: GraphTheme.palette.primary.dark,
-              }}
-              align="left"
-            >
-              {/* {this.state.currentNode.name} */}
-              {this.getHeadlineMasked()}
-            </Typography>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              <Typography
+                style={{
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  color: GraphTheme.palette.primary.dark,
+                }}
+                align="left"
+              >
+                {/* {this.state.currentNode.name} */}
+                {this.getHeadlineMasked()}
+              </Typography>
+              <div style={{ width: "5px" }}></div>
+              {this.renderNoteIcon()}
+              <div style={{ width: "5px" }}></div>
+              {this.renderRelatedNodeNumberText()}
+            </div>
           </CardActionArea>
           {this.state.nodeExpanded ? (
             <Tooltip title="Contract">
@@ -118,20 +125,25 @@ export default class NodeComponent extends React.Component<
           marginBottom: 5,
         }}
       >
-        {/* {this.renderNodePriority()} */}
+        {this.renderNodePriority()}
         {this.renderParkNodeComponent()}
         {this.renderTagComponent()}
+        {this.renderPrivacyComponent()}
         {this.renderActionIcons()}
       </div>
     );
   };
 
-  // nodeDataChanged = async () => {
-  //   await this.setState({ itemDataChanged: true});
-  //   await this.updateCurrentNode();
-  //   await this.updateGraph();
-  //   this.props.graphApp.refreshOpenItems();
-  // };
+  private renderPrivacyComponent = () => {
+    return (
+      <PrivacyPanel
+        currentNode={this.state.currentNode}
+        graphExplorer={this.props.graphExplorer}
+        graphApp={this.props.graphApp}
+        showHeader={false}
+      />
+    );
+  };
 
   renderTagComponent = () => {
     return (
@@ -142,6 +154,63 @@ export default class NodeComponent extends React.Component<
         tagsHaveChanged={this.doNothing}
       />
     );
+  };
+
+  renderNoteIcon = () => {
+    return (
+      <div>
+        {this.props.currentNode.notes.length > 0 ? (
+          <Icon
+            style={{
+              fontSize: "10px",
+              color: GraphTheme.palette.secondary.light,
+            }}
+          >
+            note
+          </Icon>
+        ) : (
+          <div></div>
+        )}
+      </div>
+    );
+  };
+
+  renderRelatedNodeNumberText = () => {
+    const relatedNodes = this.getRealatedNodesNumber();
+    return (
+      <div>
+        {relatedNodes > 0 ? (
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <Icon style={{ margin: 0, color: GraphTheme.palette.secondary.light,
+            fontSize:12 }}>
+              arrow_forward
+            </Icon>
+            <Typography
+              style={{
+                fontSize: "12px",
+                fontWeight: "bold",
+                color: GraphTheme.palette.secondary.light,
+              }}
+              align="left"
+            >
+              {relatedNodes > 0 ? relatedNodes : ""}
+            </Typography>
+          </div>
+        ) : (
+          <div></div>
+        )}
+      </div>
+    );
+  };
+
+  getRealatedNodesNumber = () => {
+    return this.props.currentNode.tagFlag
+      ? this.props.currentNode.taggedNodes.size
+      : this.props.graphExplorer.mainGraph.getEntriesWithTags(
+          this.props.currentNode.tags,
+          this.props.currentNode.state,
+          this.props.currentNode
+        ).size;
   };
 
   renderParkNodeComponent = () => {
@@ -253,7 +322,7 @@ export default class NodeComponent extends React.Component<
       >
         <Typography
           style={{
-            fontSize: "10px",
+            fontSize: "12px",
             color: GraphTheme.palette.primary.dark,
             marginLeft: 5,
           }}
@@ -263,7 +332,7 @@ export default class NodeComponent extends React.Component<
         </Typography>
         <Typography
           style={{
-            fontSize: "10px",
+            fontSize: "12px",
             fontWeight: "bold",
             color: GraphTheme.palette.primary.dark,
             marginLeft: 5,
@@ -274,17 +343,17 @@ export default class NodeComponent extends React.Component<
         </Typography>
         <Typography
           style={{
-            fontSize: "10px",
+            fontSize: "12px",
             color: GraphTheme.palette.primary.dark,
             marginLeft: 5,
           }}
           align="left"
         >
-          {", Net prioity: "}
+          {" Net prioity: "}
         </Typography>
         <Typography
           style={{
-            fontSize: "10px",
+            fontSize: "12px",
             fontWeight: "bold",
             color: GraphTheme.palette.primary.dark,
             marginLeft: 5,
@@ -298,6 +367,8 @@ export default class NodeComponent extends React.Component<
   };
 
   renderNodeChildren = () => {
+    // Don't pass removeFromList function
+    // because it's tries to remove the child from the grand parent
     return (
       <div>
         {this.state.currentNode.children.size > 0 &&
@@ -312,7 +383,6 @@ export default class NodeComponent extends React.Component<
             <NodeListComponent
               graphApp={this.props.graphApp}
               graphExplorer={this.props.graphExplorer}
-              removeFromList={this.props.removeFromList}
               nodes={this.state.currentNode.children}
             />
           </div>
@@ -340,6 +410,27 @@ export default class NodeComponent extends React.Component<
     } else {
       return this.state.currentNode.name;
     }
+  };
+
+  getHeadlineAndNotesIcon = () => {
+    return (
+      <div>
+        this.state.currentNode.name+
+        {this.state.currentNode.notes.length > 0 ? (
+          <Icon
+            onClick={(event) => this.handleIncrementPriority()}
+            style={{
+              fontSize: "16px",
+              color: GraphTheme.palette.secondary.dark,
+            }}
+          >
+            keyboard_arrow_up
+          </Icon>
+        ) : (
+          <div></div>
+        )}
+      </div>
+    );
   };
 
   renderRemoveFromList = () => {
@@ -377,8 +468,8 @@ export default class NodeComponent extends React.Component<
     await this.props.deleteNode(this.props.currentNode);
   };
 
-  handleCardClicked = () => {
-    this.props.graphApp.openNode(this.state.currentNode);
+  handleCardClicked = async() => {
+    await this.props.graphApp.openNode(this.state.currentNode);
   };
 
   static getDerivedStateFromProps = (

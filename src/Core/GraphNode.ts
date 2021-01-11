@@ -24,6 +24,7 @@ export default class GraphNode extends GraphRoot {
     id: string,
     tagFlag: boolean = false,
     contextFlag: boolean = false,
+    listFlag = false,
     starred: boolean = false,
     notes: string = "",
     createdAt: Date = new Date(),
@@ -47,7 +48,9 @@ export default class GraphNode extends GraphRoot {
     this._starred = starred;
     this.contextFlag = contextFlag;
     this._privacy=privacy
+    this._listFlag=listFlag
   }
+
 
   private _sentiment = 0;
   public get sentiment() {
@@ -127,6 +130,14 @@ export default class GraphNode extends GraphRoot {
   }
   public set contextFlag(value: boolean) {
     this._contextFlag = value;
+  }
+
+  private _listFlag = false;
+  public get listFlag() {
+    return this._listFlag;
+  }
+  public set listFlag(value) {
+    this._listFlag = value;
   }
 
   private _privacy = GraphNodePrivacy.Personal;
@@ -368,7 +379,7 @@ export default class GraphNode extends GraphRoot {
     return this.getDescendents().has(nodeToBeTest.id);
   };
 
-  removeParentEdge = (parentNode: GraphNode): GraphEdge | undefined => {
+  removeParentEdgeOfNode = (parentNode: GraphNode): GraphEdge | undefined => {
     const parentEdgeToBeRemoved = Array.from(this.parentEdges.values()).find(
       (edge) => {
         return edge.node2.id === parentNode.id;
@@ -393,7 +404,7 @@ export default class GraphNode extends GraphRoot {
       }
     } else {
       throw new Error(
-        `GraphNode: removeParentNode: parentEdgeToBeRemoved is undefined`
+        `GraphNode: removeParentNode: parentEdgeToBeRemoved is undefined. child: ${this.name} ,parent: ${parentNode.name}`
       );
     }
     return parentEdgeToBeRemoved;
@@ -435,7 +446,7 @@ export default class GraphNode extends GraphRoot {
     return new Map(
       Array.from(this._taggedNodesEdges.values())
         .map((edge) => {
-          return edge.node1;
+          return edge.node1
         })
         .map((node) => [node.id, node])
     );

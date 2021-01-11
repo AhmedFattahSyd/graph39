@@ -7,6 +7,8 @@ export interface FirebaseNodeData extends PersistentNodeData{
   name: string;
   tagFlag: boolean;
   contextFlag: boolean;
+  listFlag: boolean,
+  starred: boolean,
   notes: string;
   createdAt: firebase.firestore.Timestamp;
   updatedAt: firebase.firestore.Timestamp;
@@ -16,7 +18,6 @@ export interface FirebaseNodeData extends PersistentNodeData{
   sentiment: number;
   overrideSentiment: boolean;
   privacy: GraphNodePrivacy;
-  starred: boolean
 }
 
 export default class FirebaseNode extends PersistentNode {
@@ -26,6 +27,7 @@ export default class FirebaseNode extends PersistentNode {
       name: this.node.name,
       tagFlag: this.node.tagFlag,
       contextFlag: this.node.contextFlag,
+      listFlag: this.node.listFlag,
       starred: this.node.starred,
       notes: this.node.notes,
       createdAt: firebase.firestore.Timestamp.fromDate(this.node.createdAt),
@@ -46,6 +48,7 @@ export default class FirebaseNode extends PersistentNode {
       id,
       firebaseNodeData.tagFlag,
       firebaseNodeData.contextFlag,
+      firebaseNodeData.listFlag,
       firebaseNodeData.starred,
       firebaseNodeData.notes,
       firebaseNodeData.createdAt.toDate(),

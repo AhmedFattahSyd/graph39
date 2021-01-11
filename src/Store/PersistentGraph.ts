@@ -23,7 +23,7 @@ export default class PersistentGraph {
     return this._initialDataLoadInProgress;
   }
   public set initialDataLoadInProgress(value) {
-    this._graphExplorer.initialDataLoadInProgress=value
+    this._graphExplorer.initialDataLoadInProgress = value;
     this._initialDataLoadInProgress = value;
   }
   protected _user: User | null;
@@ -51,9 +51,9 @@ export default class PersistentGraph {
 
   deleteNode = async (node: GraphNode) => {
     // delete tag and parent edges
-    this._graph.getRealtedEdgesToNode(node).forEach(async(edge) => {
+    this._graph.getRealtedEdgesToNode(node).forEach(async (edge) => {
       await this._store.deleteEdge(edge.id);
-      this._graph.deleteEdge(edge.id)
+      this._graph.deleteEdge(edge.id);
     });
     await this._store.deleteNode(node);
     this._graph.deleteNode(node);
@@ -140,7 +140,7 @@ export default class PersistentGraph {
         await this.addTagToNode(nodeToBeTagged, tag);
       });
       // make the node active to make it show in list of entriesWithTags
-      nodeToBeTagged.state=GraphNodeState.Active
+      nodeToBeTagged.state = GraphNodeState.Active;
       this.graphUpdated();
     } else {
       throw new Error(
@@ -275,25 +275,28 @@ export default class PersistentGraph {
         await this._store.deleteEdge(parentEdge.id);
       } else {
         throw new Error(
-          `PersistentGraph: removeParent: parentEdge was not found`
+          `PersistentGraph: removeParent: parentEdge was not found. Child:${childNode.name}, parent:${parentNode.name}`
         );
       }
     } catch (error) {
-      throw error;
+      // throw error;
+      this._graphExplorer.errorOccured(error)
     }
   };
 
   removeTagFromNode = async (node: GraphNode, tag: GraphNode) => {
     try {
       const tagEdge = this._graph.deleteTagEdge(node, tag);
-      if(tagEdge !== undefined){
+      if (tagEdge !== undefined) {
         await this._store.deleteEdge(tagEdge.id);
         this.graphUpdated();
-      }else{
-        throw new Error(`PersistentGraph: tagEdge was not found: node:${node.name}, tag:${tag.name}`)
+      } else {
+        throw new Error(
+          `PersistentGraph: tagEdge was not found: node:${node.name}, tag:${tag.name}`
+        );
       }
     } catch (error) {
-      this._graphExplorer.errorOccured(error)
+      this._graphExplorer.errorOccured(error);
     }
   };
 
@@ -301,6 +304,7 @@ export default class PersistentGraph {
     name: string,
     tagFlag: boolean = false,
     contextFlag: boolean = false,
+    listFlag=false,
     starred = false
   ): Promise<GraphNode> => {
     try {
@@ -308,6 +312,7 @@ export default class PersistentGraph {
         name,
         tagFlag,
         contextFlag,
+        listFlag,
         starred
       );
       await this._store.createNewNode(newNode);

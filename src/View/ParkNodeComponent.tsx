@@ -16,7 +16,7 @@ interface IProps {
 const ParkNodeComponent: React.FC<IProps> = (props: IProps) => {
   const [parkUntilText, setParkUnitlText] = useState("1h");
   // const [currentState, setCurrentState] = useState(props.currentState);
-  const [parkedUnitl, setParkedUntil] = useState(props.currentNode.parkedUntil);
+  // const [parkedUnitl, setParkedUntil] = useState(props.currentNode.parkedUntil);
 
   // useEffect(() => {
   //   console.log(
@@ -78,16 +78,8 @@ const ParkNodeComponent: React.FC<IProps> = (props: IProps) => {
     }
     const currentNode = props.currentNode;
     currentNode.park(parkUntilHours);
-    // console.log(
-    //   "ParkNoeComponent: handleParkNode: parkUntilHours:",
-    //   parkUntilHours,
-    //   "node:",
-    //   currentNode
-    // );
     currentNode.priority += 2;
     await props.graphExplorer.updateNode(currentNode);
-    // setCurrentState(currentNode.state);
-    setParkedUntil(currentNode.parkedUntil);
     props.updateState(currentNode.state);
   };
 
@@ -143,7 +135,9 @@ const ParkNodeComponent: React.FC<IProps> = (props: IProps) => {
           }}
           align="left"
         >
-          {"(" + parkedUnitl.toString().substring(0, 24) + ")"}
+          {"(" +
+            props.currentNode.parkedUntil.toString().substring(0, 24) +
+            ")"}
         </Typography>
       </div>
     );

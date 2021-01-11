@@ -1,3 +1,4 @@
+import { STOP_WORDS } from "./StopWords";
 import { GraphObjectClass } from "./GraphObjectClass";
 import GraphRoot from "./GraphRoot";
 import GraphNode, { GraphNodeState } from "./GraphNode";
@@ -65,32 +66,20 @@ export default class Graph extends GraphRoot {
     searchText: string = "",
     tagFlag: boolean = false,
     contextFlag: boolean = false,
+    listFlag = false,
     starredFlag: boolean = false
   ): Map<string, GraphNode> => {
-    // for entries ignore all flags because all are entries
-    // let ignoreFlags = false;
-    // if (!tagFlag && !contextFlag && !starredFlag) {
-    //   ignoreFlags = true;
-    // }
-    // let currentContextTags = new Map<string, GraphNode>();
-    // let ignoreContext = true;
-    // if (filterByContext) {
-    //   const currentContextNode = this.getCurrentContextNode();
-    //   if (currentContextNode !== undefined) {
-    //     currentContextTags = currentContextNode.tags;
-    //     ignoreContext = false;
-    //   }
-    // }
     return new Map(
       Array.from(this._nodes.values())
-        .filter((node) => {
-          return (
+        .filter(
+          (node) =>
             node.name.toLowerCase().includes(searchText.toLowerCase()) &&
-            node.tagFlag === tagFlag &&
-            node.contextFlag === contextFlag &&
-            node.starred === starredFlag
-          );
-        })
+            ((starredFlag && node.starred === starredFlag) ||
+              (!starredFlag &&
+                node.tagFlag === tagFlag &&
+                node.contextFlag === contextFlag &&
+                node.listFlag === listFlag))
+        )
         .map((node) => [node.id, node])
     );
   };
@@ -135,7 +124,7 @@ export default class Graph extends GraphRoot {
       .toLocaleLowerCase()
       .split(" ")
       .filter((word) => {
-        return word.length > 2;
+        return word.length > 2 && !STOP_WORDS.includes(word);
       });
   };
 
@@ -158,23 +147,24 @@ export default class Graph extends GraphRoot {
     const foundEntries = new Array<GraphNode>();
     let matchedNodes: MatchedNode[] = [];
     const searchWords = this.getWords(searchText);
-    this._nodes.forEach((entry) => {
-      if (
-        nodeToExclude === null ||
-        (entry.id !== nodeToExclude.id &&
-          !entry.isAncestor(nodeToExclude) &&
-          !entry.isDescendent(nodeToExclude))
-      ) {
+    this._nodes.forEach(
+      (entry) => {
+        // if (
+        //   nodeToExclude === null ||
+        //   (entry.id !== nodeToExclude.id &&
+        //     !entry.isAncestor(nodeToExclude) &&
+        //     !entry.isDescendent(nodeToExclude))
+        // ) {
         const entryWords = this.getWords(entry.name);
         let numberOfMatches = 0;
         entryWords.forEach((entryWord) => {
           searchWords.forEach((searchWord) => {
             if (searchWord === entryWord) {
               numberOfMatches += 1;
-            } else {
-              if (entryWord.includes(searchWord)) {
-                numberOfMatches += 0.5;
-              }
+              // } else {
+              //   if (entryWord.includes(searchWord)) {
+              //     numberOfMatches += 0.5;
+              //   }
             }
           });
         });
@@ -184,7 +174,8 @@ export default class Graph extends GraphRoot {
           matchedNodes.push({ matchingLevel: matchLevel, node: entry });
         }
       }
-    });
+      // }
+    );
     let truncatedArray = [];
     if (matchedNodes.length > maxEntryArray) {
       truncatedArray = matchedNodes.slice(0, maxEntryArray - 1);
@@ -365,10 +356,10 @@ export default class Graph extends GraphRoot {
     }
     // remove parent & children edges
     nodeToBeDeleted.children.forEach((childNode) =>
-      childNode.removeParentEdge(nodeToBeDeleted)
+      childNode.removeParentEdgeOfNode(nodeToBeDeleted)
     );
     nodeToBeDeleted.parents.forEach((parentNode) =>
-      nodeToBeDeleted.removeParentEdge(parentNode)
+      nodeToBeDeleted.removeParentEdgeOfNode(parentNode)
     );
     if (!this._nodes.delete(nodeToBeDeleted.id)) {
       throw new Error(
@@ -395,7 +386,7 @@ export default class Graph extends GraphRoot {
     childNode: GraphNode,
     parentNode: GraphNode
   ): GraphEdge | undefined => {
-    const parentEdgeTobeDeleted = childNode.removeParentEdge(parentNode);
+    const parentEdgeTobeDeleted = childNode.removeParentEdgeOfNode(parentNode);
     if (parentEdgeTobeDeleted !== undefined) {
       if (!this._edges.delete(parentEdgeTobeDeleted.id)) {
         throw new Error(
@@ -414,9 +405,17 @@ export default class Graph extends GraphRoot {
     name: string,
     tagFlag: boolean = false,
     contextFlag: boolean = false,
+    listFlag = false,
     starred = false
   ): GraphNode => {
-    const newNode = new GraphNode(name, "", tagFlag, contextFlag, starred);
+    const newNode = new GraphNode(
+      name,
+      "",
+      tagFlag,
+      contextFlag,
+      listFlag,
+      starred
+    );
     this.addNode(newNode);
     return newNode;
   };

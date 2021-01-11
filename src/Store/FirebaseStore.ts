@@ -40,6 +40,8 @@ export default class FirebaseStore extends GraphStore {
       // console.log("FirebaseStore: checkUser..: User does not exists");
       await this.createUser();
       await this.createNewGraph();
+      this._persistentGraph.initialDataLoadInProgress=false
+      await this._persistentGraph.graphUpdated();
     }
   };
 

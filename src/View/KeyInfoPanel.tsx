@@ -10,6 +10,7 @@ interface NamePanelProps {
   currentNode: GraphNode;
   graphExplorer: GraphExplorer;
   nodeDataChanged: () => void;
+  updateNode: () => void;
   graphApp: GraphApp;
 }
 
@@ -190,6 +191,22 @@ export default class KeyInfoPanel extends React.Component<
                 >
                   Context
                 </Typography>
+                <Checkbox
+                  color="primary"
+                  checked={this.state.currentNode.listFlag}
+                  onChange={(event) => this.setListFlag(event)}
+                  size="small"
+                  // inputProps={{ "aria-label": "primary checkbox" }}
+                />
+                <Typography
+                  variant="body1"
+                  style={{
+                    fontWeight: "bold",
+                    color: Theme.palette.primary.dark,
+                  }}
+                >
+                  List
+                </Typography>
               </div>
               <div
                 style={{
@@ -227,21 +244,28 @@ export default class KeyInfoPanel extends React.Component<
   setTagFlag = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const node = this.state.currentNode;
     node.tagFlag = event.target.checked;
-    await this.props.nodeDataChanged();
+    await this.props.updateNode();
     this.setState({ currentNode: node });
   };
 
   setContextFlag = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const node = this.state.currentNode;
     node.contextFlag = event.target.checked;
-    await this.props.nodeDataChanged();
+    await this.props.updateNode();
+    this.setState({ currentNode: node });
+  };
+
+  setListFlag = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const node = this.state.currentNode;
+    node.listFlag = event.target.checked;
+    await this.props.updateNode();
     this.setState({ currentNode: node });
   };
 
   setStarredFlag = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const node = this.state.currentNode;
     node.starred = event.target.checked;
-    await this.props.nodeDataChanged();
+    await this.props.updateNode();
     this.setState({ currentNode: node });
   };
 
@@ -250,6 +274,7 @@ export default class KeyInfoPanel extends React.Component<
       headlineText: (event.target as HTMLInputElement).value,
       nodeDataChanged: true,
     });
+    this.props.nodeDataChanged();
   };
 
   handleNotesChanged = async (event: React.ChangeEvent) => {
@@ -257,6 +282,7 @@ export default class KeyInfoPanel extends React.Component<
       notesText: (event.target as HTMLInputElement).value,
       nodeDataChanged: true,
     });
+    this.props.nodeDataChanged();
   };
 
   static getDerivedStateFromProps = (
@@ -274,16 +300,16 @@ export default class KeyInfoPanel extends React.Component<
     if (this.state.nodeDataChanged) {
       const node = this.state.currentNode;
       node.name = this.state.headlineText;
-      this.props.nodeDataChanged();
+      this.props.updateNode();
       this.setState({ currentNode: node, nodeDataChanged: false });
     }
   };
 
-  handleNotesOnBlur = () => {
+  handleNotesOnBlur = async () => {
     if (this.state.nodeDataChanged) {
       const node = this.state.currentNode;
       node.notes = this.state.notesText;
-      this.props.nodeDataChanged();
+      await this.props.updateNode();
       this.setState({ currentNode: node, nodeDataChanged: false });
     }
   };

@@ -341,19 +341,22 @@ export default class EntriesWithTagsPanel extends React.Component<
 
   handleEntrySearchTextChange = async (event: React.ChangeEvent) => {
     const entrySearchText = (event.target as HTMLInputElement).value;
-    if (entrySearchText.length > 2) {
-      await this.setState({
-        entrySearchText: entrySearchText,
-        entryListVisible: true,
-      });
-      // we will do search explicit when search button is pressed
-      // await this.setMatchedEntries();
-    } else {
-      await this.setState({
-        entrySearchText: entrySearchText,
-        entryListVisible: false,
-      });
-    }
+    this.setState({
+          entrySearchText: entrySearchText,})
+          
+    // if (entrySearchText.length > 2) {
+    //   await this.setState({
+    //     entrySearchText: entrySearchText,
+    //     entryListVisible: true,
+    //   });
+    //   // we will do search explicit when search button is pressed
+    //   // await this.setMatchedEntries();
+    // } else {
+    //   await this.setState({
+    //     entrySearchText: entrySearchText,
+    //     entryListVisible: false,
+    //   });
+    // }
   };
 
   setMatchedEntries = () => {

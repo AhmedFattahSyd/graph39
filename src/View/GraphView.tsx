@@ -33,6 +33,7 @@ interface GraphViewProps {
   filteredTags: Map<string, GraphNode>;
   filteredContexts: Map<string, GraphNode>;
   filteredEntries: Map<string, GraphNode>;
+  filteredLists: Map<string, GraphNode>;
   setSearchText: (text: string) => void;
 }
 interface GraphViewState {
@@ -48,6 +49,7 @@ interface GraphViewState {
   filteredTags: Map<string, GraphNode>;
   filteredContexts: Map<string, GraphNode>;
   filteredEntries: Map<string, GraphNode>;
+  filteredLists: Map<string, GraphNode>;
 }
 
 export default class GraphView extends React.Component<
@@ -70,6 +72,7 @@ export default class GraphView extends React.Component<
       filteredTags: props.filteredTags,
       filteredContexts: props.filteredContexts,
       filteredEntries: props.filteredEntries,
+      filteredLists: props.filteredLists,
     };
   }
 
@@ -160,11 +163,11 @@ export default class GraphView extends React.Component<
     );
   };
 
-  handleSearchButtonClicked = async() => {
+  handleSearchButtonClicked = async () => {
     await this.props.setSearchText(this.state.searchText);
   };
 
-  handleClearSearchText = async() => {
+  handleClearSearchText = async () => {
     await this.setState({ searchText: "" });
     await this.handleSearchButtonClicked();
   };
@@ -273,6 +276,12 @@ export default class GraphView extends React.Component<
             initialStateOpen={false}
           />
           <Panel
+            index={4}
+            renderLabelFun={this.renderListPanelLabel}
+            renderDetailsFun={this.renderFilteredLists}
+            initialStateOpen={false}
+          />
+          <Panel
             index={2}
             renderLabelFun={this.renderContextPanelLabel}
             renderDetailsFun={this.renderFilteredContexts}
@@ -325,6 +334,7 @@ export default class GraphView extends React.Component<
       filteredTags: props.filteredTags,
       filteredContexts: props.filteredContexts,
       filteredEntries: props.filteredEntries,
+      filteredLists:props.filteredLists,
     };
     return state;
   };
@@ -392,12 +402,6 @@ export default class GraphView extends React.Component<
   };
 
   private renderFilteredEntries = () => {
-    // const filteredNodes = this.state.currentGraph.getFilteredNodesExact(
-    //   this.state.searchText,
-    //   false,
-    //   false,
-    //   false
-    // );
     return (
       <div>
         {this.state.filteredEntries.size > 0 ? (
@@ -410,6 +414,31 @@ export default class GraphView extends React.Component<
             >
               <NodeListComponent
                 nodes={this.state.filteredEntries}
+                graphApp={this.props.graphApp}
+                graphExplorer={this.props.graphExplorer}
+              />
+            </Card>
+          </div>
+        ) : (
+          <div></div>
+        )}
+      </div>
+    );
+  };
+
+  private renderFilteredLists = () => {
+    return (
+      <div>
+        {this.state.filteredLists.size > 0 ? (
+          <div>
+            <Card
+              style={{
+                backgroundColor: GraphTheme.palette.primary.light,
+                margin: 5,
+              }}
+            >
+              <NodeListComponent
+                nodes={this.state.filteredLists}
                 graphApp={this.props.graphApp}
                 graphExplorer={this.props.graphExplorer}
               />
@@ -492,12 +521,6 @@ export default class GraphView extends React.Component<
   };
 
   renderStarredPanelLabel = () => {
-    // const filteredNodes = this.state.currentGraph.getFilteredNodesExact(
-    //   this.state.searchText,
-    //   false,
-    //   false,
-    //   true
-    // );
     return (
       <div style={{ width: "330px" }}>
         <div
@@ -525,6 +548,43 @@ export default class GraphView extends React.Component<
                 marginTop: "3px",
               }}
               onClick={this.props.graphApp.createNewStarredNode}
+            >
+              add_circle_outline
+            </Icon>
+          </Tooltip>
+        </div>
+      </div>
+    );
+  };
+
+  renderListPanelLabel = () => {
+    return (
+      <div style={{ width: "330px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignContent: "stretch",
+          }}
+        >
+          <div style={{ width: "10px" }}></div>
+          <Typography
+            variant="body1"
+            style={{
+              fontWeight: "bold",
+              color: GraphTheme.palette.primary.dark,
+            }}
+          >
+            {"Lists: (" + this.state.filteredLists.size + ")"}
+          </Typography>
+          <Tooltip title="New starred node">
+            <Icon
+              style={{
+                color: GraphTheme.palette.primary.dark,
+                fontSize: "18px",
+                marginTop: "3px",
+              }}
+              onClick={this.props.graphApp.createNewList}
             >
               add_circle_outline
             </Icon>

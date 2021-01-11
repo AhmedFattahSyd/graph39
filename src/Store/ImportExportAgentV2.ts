@@ -8,6 +8,7 @@ export interface ExportNodeData {
   name: string;
   tagFlag: boolean;
   contextFlag: boolean;
+  listFlag:boolean
   notes: string;
   createdAt: Date;
   updatedAt: Date;
@@ -43,7 +44,7 @@ export interface ExportGraphData {
   };
 }
 
-export default class ExportImportAgentV2 {
+export default class ImportExportAgentV2 {
 
   private _graphExplorer: GraphExplorer;
   private _dataVersionNumber = 2;
@@ -92,6 +93,7 @@ export default class ExportImportAgentV2 {
       nodeData.id,
       nodeData.tagFlag,
       nodeData.contextFlag,
+      nodeData.listFlag,
       nodeData.starred,
       nodeData.notes,
       new Date(nodeData.createdAt),
@@ -161,6 +163,7 @@ export default class ExportImportAgentV2 {
       name: node.name,
       tagFlag: node.tagFlag,
       contextFlag: node.contextFlag,
+      listFlag:node.listFlag,
       starred: node.starred,
       notes: node.notes,
       createdAt: node.createdAt,

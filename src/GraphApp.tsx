@@ -49,6 +49,7 @@ interface AppState {
   filteredTags: Map<string, GraphNode>;
   filteredContexts: Map<string, GraphNode>;
   filteredEntries: Map<string, GraphNode>;
+  filteredLists: Map<string, GraphNode>;
   searchText: string;
 }
 
@@ -58,7 +59,7 @@ enum MessageType {
 }
 
 export default class GraphApp extends React.Component<AppProps, AppState> {
-  private appVersion = "My Graph - Version: Alpha (0.39.001) - 26 Nov 2020";
+  private appVersion = "My Graph - Version: Alpha (0.39.001) - 11 Jan 2021";
   private maxDisplayWidth = 10000;
   private displayWidth: number = 3000;
   private graphExplorer: Explorer;
@@ -111,6 +112,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
       filteredTags: new Map(),
       filteredContexts: new Map(),
       filteredEntries: new Map(),
+      filteredLists: new Map(),
       searchText: "",
     };
   }
@@ -119,6 +121,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     this.setState({
       filteredStarredNodes: this.graphExplorer.mainGraph.getFilteredNodesExact(
         this.state.searchText,
+        false,
         false,
         false,
         true
@@ -141,6 +144,13 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
         false,
         false
       ),
+      filteredLists: this.graphExplorer.mainGraph.getFilteredNodesExact(
+        this.state.searchText,
+        false,
+        false,
+        true,
+        false
+      ),
     });
   };
 
@@ -153,12 +163,14 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     headline = "New entry",
     tagFlag = false,
     contextFlag = false,
+    listFlag = false,
     starred = false
   ) => {
     const newNode = await this.graphExplorer.createNewNode(
       headline,
       tagFlag,
       contextFlag,
+      listFlag,
       starred
     );
     if (newNode !== null) {
@@ -176,7 +188,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
   };
 
   createNewStarredNode = async () => {
-    this.createNewNode("New node", false, false, true);
+    this.createNewNode("New node", false, false, false, true);
   };
 
   createNewTag = async () => {
@@ -187,11 +199,19 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     this.createNewNode("New context", false, true);
   };
 
+  createNewList = async () => {
+    this.createNewNode("New list", false, false, true);
+  };
+
   openNode = (node: GraphNode) => {
-    const viewableItem = new ViewableItem(ViewableItemClass.Node, node);
-    const openViewableItems = this.state.openViewableItems;
-    openViewableItems.set(viewableItem.id, viewableItem);
-    this.setState({ openViewableItems: openViewableItems });
+    if (!this.state.openViewableItems.has(node.id)) {
+      const viewableItem = new ViewableItem(ViewableItemClass.Node, node);
+      const openViewableItems = this.state.openViewableItems;
+      openViewableItems.set(viewableItem.id, viewableItem);
+      this.setState({ openViewableItems: openViewableItems });
+    } else {
+      this.showMessage("Node: " + node.name + " is already open");
+    }
   };
 
   signOn = async () => {
@@ -307,6 +327,7 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
             filteredTags={this.state.filteredTags}
             filteredContexts={this.state.filteredContexts}
             filteredEntries={this.state.filteredEntries}
+            filteredLists={this.state.filteredLists}
             setSearchText={this.setSearchText}
           />
         );
@@ -394,6 +415,9 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
           <ListItem button onClick={this.createNewTag}>
             <ListItemText primary="New tag" />
           </ListItem>
+          <ListItem button onClick={this.createNewList}>
+            <ListItemText primary="New list" />
+          </ListItem>
           <ListItem button onClick={this.createNewContext}>
             <ListItemText primary="New context" />
           </ListItem>
@@ -435,9 +459,9 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
     );
   };
 
-  private showAppVersion =()=>{
-    this.showMessage(this.appVersion)
-  }
+  private showAppVersion = () => {
+    this.showMessage(this.appVersion);
+  };
 
   private exportData = async () => {
     await this.graphExplorer.exportData();
@@ -672,6 +696,10 @@ export default class GraphApp extends React.Component<AppProps, AppState> {
         </AppBar>
       </div>
     );
+  };
+
+  public setDataSavingInProgress = (value: boolean) => {
+    this.setState({ dataSavingInprogress: value });
   };
 
   getCurrentUserName = () => {

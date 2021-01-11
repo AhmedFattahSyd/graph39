@@ -10,6 +10,7 @@ interface IProps {
   currentNode: GraphNode;
   graphApp: GraphApp;
   graphExplorer: GraphExplorer;
+  showHeader?: boolean;
 }
 
 const PrivacyPanel: React.FC<IProps> = (props: IProps) => {
@@ -35,40 +36,34 @@ const PrivacyPanel: React.FC<IProps> = (props: IProps) => {
     return (
       <Card
         elevation={1}
-        style={{
-          margin: 5,
-          backgroundColor: Theme.palette.primary.main,
-        }}
+        style={{ textAlign: "left", padding: 5 }}
       >
-        <Card
-          elevation={1}
-          style={{ textAlign: "left", margin: 0, padding: 5 }}
-        >
-          <div style={{ display: "flex", alignItems:"Center" }}>
-            <Typography
-              variant="body1"
-              style={{
-                color: Theme.palette.primary.dark,
-              }}
-            >
-              {"Privacy setting:  "}
-            </Typography>
-            <div style={{width:5}}/>
-            <Select
-              value={privacy}
-              onChange={(event) => handlePrivacyChange(event)}
-              style={{
-                fontWeight: "bold",
-                color: Theme.palette.primary.dark,
-              }}
-            >
-              <MenuItem value={GraphNodePrivacy.Public}>Public</MenuItem>
-              <MenuItem value={GraphNodePrivacy.Community}>Cummunity</MenuItem>
-              <MenuItem value={GraphNodePrivacy.Personal}>Personal</MenuItem>
-              <MenuItem value={GraphNodePrivacy.Private}>Private</MenuItem>
-            </Select>
-          </div>
-        </Card>
+        <div style={{ display: "flex", alignItems: "Center" }}>
+          <Typography
+            variant="body1"
+            style={{
+              color: Theme.palette.primary.dark,
+              fontSize: "12px",
+            }}
+          >
+            {"Privacy setting:  "}
+          </Typography>
+          <div style={{ width: 5, fontSize: "12px" }} />
+          <Select
+            value={privacy}
+            onChange={(event) => handlePrivacyChange(event)}
+            style={{
+              fontWeight: "bold",
+              color: Theme.palette.primary.dark,
+              fontSize: "12px",
+            }}
+          >
+            <MenuItem value={GraphNodePrivacy.Public}>Public</MenuItem>
+            <MenuItem value={GraphNodePrivacy.Community}>Cummunity</MenuItem>
+            <MenuItem value={GraphNodePrivacy.Personal}>Personal</MenuItem>
+            <MenuItem value={GraphNodePrivacy.Private}>Private</MenuItem>
+          </Select>
+        </div>
       </Card>
     );
   };
@@ -91,7 +86,7 @@ const PrivacyPanel: React.FC<IProps> = (props: IProps) => {
         renderLabelFun={renderLabel}
         renderDetailsFun={renderDetails}
         initialStateOpen={false}
-        showLabel={true}
+        showLabel={props.showHeader}
       />
     </div>
   );

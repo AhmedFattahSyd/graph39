@@ -75,6 +75,22 @@ export default class TagPanel extends React.Component<
 
   renderTagSummary = () => {
     return (
+      <Typography
+        variant="body1"
+        style={{
+          fontSize: "10px",
+          fontWeight: "bold",
+          color: Theme.palette.primary.dark,
+          marginLeft: 5,
+        }}
+      >
+        {this.getTagsNameCapped()}
+      </Typography>
+    );
+  };
+
+  renderTagSummaryOLD = () => {
+    return (
       <div style={{ display: "flex" }}>
         {Array.from(this.state.currentNode.tags.values()).map((tag) => {
           return (
@@ -96,6 +112,18 @@ export default class TagPanel extends React.Component<
         })}
       </div>
     );
+  };
+
+  getTagsNameCapped = (): string => {
+    const maxLength = 40
+    const tagNames = Array.from(this.state.currentNode.tags.values())
+      .map((tag) => tag.name + ", ")
+      .reduce((allNames, tagName) => {
+        return allNames + tagName;
+      }, "");
+    const tagNamesCapped =
+      tagNames.length < 30 ? tagNames : tagNames.substr(0, maxLength) + "...";
+    return tagNamesCapped;
   };
 
   renderDetails = () => {

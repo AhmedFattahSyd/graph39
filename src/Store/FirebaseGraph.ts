@@ -33,9 +33,6 @@ export default class FirebaseGraph extends PersistentGraph {
   addToNodes = async (id: string, data: PersistentNodeData) => {
     const newNode = FirebaseNode.fromData(id, data as FirebaseNodeData);
     this._graph.addNode(newNode)
-    // if(this._graph.nodes.size % 100 === 0){
-    //   this._graphExplorer.graphUpdated()
-    // }
   };
 
   setCurrentGraph = (id: string, data: FirebaseGraphData) => {

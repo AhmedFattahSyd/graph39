@@ -32,7 +32,7 @@ interface NodeViewProps {
 
 interface NodeViewState {
   currentNode: GraphNode;
-  itemDataChanged: boolean;
+  nodeDataChanged: boolean;
   dataSavingInProgress: boolean;
 }
 
@@ -44,7 +44,7 @@ export default class NodeView extends React.Component<
     super(props);
     this.state = {
       currentNode: props.currentNode,
-      itemDataChanged: false,
+      nodeDataChanged: false,
       dataSavingInProgress: false,
     };
   }
@@ -91,6 +91,17 @@ export default class NodeView extends React.Component<
             {this.state.currentNode.tagFlag ? "TAG" : ""}
           </Typography>
           <div style={{ width: "5px" }} />
+          <Typography
+            variant="button"
+            style={{
+              color: GraphTheme.palette.primary.contrastText,
+              fontSize: "9px",
+              fontWeight: "bold",
+            }}
+          >
+            {this.state.currentNode.listFlag ? "LIST" : ""}
+          </Typography>
+          <div style={{ width: "5px" }} />
           {this.state.currentNode.starred ? (
             <Icon
               style={{
@@ -128,6 +139,7 @@ export default class NodeView extends React.Component<
           nodeDataChanged={this.nodeDataChanged}
           graphExplorer={this.props.graphExplorer}
           graphApp={this.props.graphApp}
+          updateNode={this.updateCurrentNode}
         />
         {this.state.currentNode.tagFlag ? (
           <div>
@@ -253,8 +265,11 @@ export default class NodeView extends React.Component<
   };
 
   handleDelete = async () => {
+    this.setState({ dataSavingInProgress: true });
+    this.props.graphApp.setDataSavingInProgress(true);
     await this.props.graphExplorer.deleteNode(this.state.currentNode);
-    this.props.graphApp.closeView(this.props.viewableItem);
+    await this.props.graphApp.closeView(this.props.viewableItem);
+    this.props.graphApp.setDataSavingInProgress(false);
   };
 
   handleSaveAndClose = async () => {
@@ -263,12 +278,7 @@ export default class NodeView extends React.Component<
   };
 
   nodeDataChanged = async () => {
-    const node = this.state.currentNode;
-    // node.name = newName;
-    await this.setState({ itemDataChanged: true, currentNode: node });
-    await this.updateCurrentNode();
-    await this.updateGraph();
-    this.props.graphApp.refreshOpenItems();
+    this.setState({ nodeDataChanged: true });
   };
 
   static getDerivedStateFromProps = (
@@ -284,17 +294,15 @@ export default class NodeView extends React.Component<
 
   updateCurrentNode = async () => {
     try {
-      // this.props.graphApp.appendLog("Hello from NodeView")
-      if (this.state.itemDataChanged) {
-        const node = this.state.currentNode;
-        await this.props.graphExplorer.updateNode(node);
-        this.setState({
-          currentNode: node,
-          itemDataChanged: false,
-        });
-      } else {
-        // do nothing. data has not changed
-      }
+      this.setState({ dataSavingInProgress: true });
+      this.props.graphApp.setDataSavingInProgress(true);
+      await this.props.graphExplorer.updateNode(this.state.currentNode);
+      this.props.graphApp.refreshOpenItems();
+      this.props.graphApp.setDataSavingInProgress(false);
+      this.setState({
+        nodeDataChanged: false,
+        dataSavingInProgress: false,
+      });
     } catch (error) {
       throw error;
     }
@@ -307,10 +315,8 @@ export default class NodeView extends React.Component<
     });
   };
 
-  updateGraph = () => {};
-
   renderLeftIcon = () => {
-    let saveIconColor = this.state.itemDataChanged
+    let saveIconColor = this.state.nodeDataChanged
       ? GraphTheme.palette.secondary.light
       : GraphTheme.palette.primary.contrastText;
     return (
@@ -332,7 +338,7 @@ export default class NodeView extends React.Component<
   };
 
   renderRightIcon = () => {
-    let saveIconColor = this.state.itemDataChanged
+    let saveIconColor = this.state.nodeDataChanged
       ? GraphTheme.palette.secondary.light
       : GraphTheme.palette.primary.contrastText;
     return (
@@ -340,7 +346,7 @@ export default class NodeView extends React.Component<
         {!this.state.dataSavingInProgress ? (
           <Tooltip title={"Save"}>
             <Icon
-                onClick={() => this.updateCurrentNode}
+              onClick={() => this.updateCurrentNode}
               style={{ fontSize: "18px", color: saveIconColor }}
             >
               save
@@ -373,7 +379,7 @@ export default class NodeView extends React.Component<
 
   handleClose = () => {
     // console.log("handleClose");
-    if (!this.state.itemDataChanged) {
+    if (!this.state.nodeDataChanged) {
       this.props.graphApp.closeView(this.props.viewableItem);
     } else {
       // do nothing
@@ -395,7 +401,7 @@ export default class NodeView extends React.Component<
           }}
           size="small"
           // color="secondary"
-          disabled={this.state.itemDataChanged}
+          disabled={this.state.nodeDataChanged}
         >
           Close
         </Button>
